@@ -1,0 +1,5 @@
+The project is enhanced with a modern, healthcare-oriented visual theme to improve usability and user trust. A calm and professional color palette using soft blue and green tones, medical icons, and structured layouts is applied throughout the application to create a clinical and user-friendly environment. The theme ensures clear readability, consistent design, and a polished appearance suitable for healthcare professionals.
+
+In addition, the system emphasizes patient data privacy and security through clear visual indicators and messages. A privacy notice informs users that patient information is processed only during the current session and is not permanently stored, ensuring confidentiality and ethical data handling. This approach increases transparency and builds user confidence in the system.
+
+The combination of a healthcare-focused theme and explicit privacy messaging makes the application more professional, visually appealing, and aligned with real-world medical software standards while maintaining simplicity and ease of use.

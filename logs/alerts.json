@@ -1,0 +1,35 @@
+[
+  {
+    "timestamp": "2026-01-25T19:15:48.008579",
+    "user": "test_user",
+    "risk_level": "Medium",
+    "alert_message": "Moderate risk detected",
+    "recommendations": [
+      "Review medication",
+      "Monitor vital signs"
+    ],
+    "acknowledged": false
+  },
+  {
+    "timestamp": "2026-01-25T20:26:13.020124",
+    "user": "test_user",
+    "risk_level": "Medium",
+    "alert_message": "Moderate risk detected",
+    "recommendations": [
+      "Review medication",
+      "Monitor vital signs"
+    ],
+    "acknowledged": false
+  },
+  {
+    "timestamp": "2026-01-25T20:27:59.271425",
+    "user": "test_user",
+    "risk_level": "Medium",
+    "alert_message": "Moderate risk detected",
+    "recommendations": [
+      "Review medication",
+      "Monitor vital signs"
+    ],
+    "acknowledged": false
+  }
+]

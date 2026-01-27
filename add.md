@@ -1,0 +1,7 @@
+To make the system more secure, professional, and closer to real-world hospital usage, additional enhancements are incorporated into the project. Basic security mechanisms such as user authentication and role-based access control are included to ensure that only authorized doctors and pharmacists can access the system. Patient data is handled in an anonymized and secure manner, without storing personal identifiers, thereby maintaining privacy and confidentiality.
+
+The system is extended to include more vital signs and clinical inputs such as body temperature, blood pressure, heart rate, oxygen saturation (SpO₂), and respiratory rate in addition to patient symptoms. These vital signs provide a more complete clinical view of the patient and improve the accuracy of medical error risk prediction.
+
+To improve usability and professionalism, the application features a clean and modern user interface with healthcare-themed colors, visual indicators for risk levels (green, yellow, and red), and simple explanation messages for alerts. The system also includes logging and monitoring features to record predictions and alerts for future review and quality improvement.
+
+These enhancements make the Clinical Decision Support System more secure, reliable, and suitable for real-world healthcare environments, while continuing to support doctors and pharmacists with low-fatigue and meaningful decision support.

@@ -63,7 +63,7 @@ def render_risk_gauge(risk_score: float, risk_label: str) -> None:
 
 def render_risk_badge(risk_label: str, confidence: float) -> None:
     """
-    Render a prominent risk level badge.
+    Render a prominent risk level badge with explanation.
     
     Args:
         risk_label: Risk label (Low, Medium, High)
@@ -71,24 +71,56 @@ def render_risk_badge(risk_label: str, confidence: float) -> None:
     """
     color = RISK_COLORS.get(risk_label, "#6c757d")
     
-    # Emoji based on risk level
-    emoji = {"Low": "✅", "Medium": "⚠️", "High": "🚨"}.get(risk_label, "❓")
+    # Emoji and explanation based on risk level
+    risk_info = {
+        "Low": {
+            "emoji": "🟢",
+            "explanation": "The patient's clinical indicators suggest a low probability of medical errors. Standard care protocols are appropriate.",
+            "css_class": "risk-low"
+        },
+        "Medium": {
+            "emoji": "🟡", 
+            "explanation": "Some clinical factors indicate moderate risk. Consider additional review before finalizing treatment decisions.",
+            "css_class": "risk-medium"
+        },
+        "High": {
+            "emoji": "🔴",
+            "explanation": "Multiple risk factors detected. Careful clinical review recommended before proceeding with treatment.",
+            "css_class": "risk-high"
+        }
+    }
+    
+    info = risk_info.get(risk_label, {"emoji": "❓", "explanation": "Unable to determine risk level.", "css_class": ""})
+    css_class = info.get("css_class", "")
     
     st.markdown(f"""
-    <div style="
-        background: linear-gradient(135deg, {color}22, {color}44);
-        border-left: 5px solid {color};
-        border-radius: 10px;
-        padding: 20px;
+    <div class="{css_class}" style="
+        background: linear-gradient(135deg, {color}15, {color}30);
+        border-left: 6px solid {color};
+        border-radius: 12px;
+        padding: 24px;
         text-align: center;
-        margin: 10px 0;
+        margin: 15px 0;
+        box-shadow: 0 4px 15px {color}20;
+        animation: fadeIn 0.6s ease-out;
     ">
-        <h1 style="color: {color}; margin: 0; font-size: 2.5rem;">
-            {emoji} {risk_label.upper()} RISK
+        <div style="font-size: 3rem; margin-bottom: 10px; animation: successPop 0.5s ease-out;">{info['emoji']}</div>
+        <h1 style="color: {color}; margin: 0; font-size: 2rem; font-weight: 700;">
+            {risk_label.upper()} RISK
         </h1>
-        <p style="color: #666; margin: 10px 0 0 0; font-size: 1.1rem;">
-            Model Confidence: <strong>{confidence:.1%}</strong>
+        <p style="color: #555; margin: 15px 0 10px 0; font-size: 1rem; line-height: 1.5;">
+            {info['explanation']}
         </p>
+        <div style="
+            background: {color}15;
+            border-radius: 20px;
+            padding: 8px 16px;
+            display: inline-block;
+            margin-top: 10px;
+            transition: transform 0.3s ease;
+        ">
+            <span style="color: {color}; font-weight: 600;">Confidence: {confidence:.1%}</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 

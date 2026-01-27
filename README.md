@@ -202,3 +202,7 @@ This project is for educational purposes.
 ## 📧 Contact
 
 For questions or suggestions, please open an issue in the repository.
+
+⚠️ This application is for educational and decision-support purposes only.
+It does not replace professional medical judgment.
+Patient data is processed only during the session and is not permanently stored.

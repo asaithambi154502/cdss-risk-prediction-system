@@ -102,11 +102,23 @@ def _render_high_risk_alert(message: str, confidence: float, recommendations: Op
 
 def _render_medium_risk_alert(message: str, confidence: float, recommendations: Optional[List[str]]) -> None:
     """Render a medium-risk warning alert."""
+    st.markdown("""
+    <style>
+    @keyframes glowWarning {
+        0%, 100% { box-shadow: 0 0 5px rgba(255, 193, 7, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(255, 193, 7, 0.8), 0 0 30px rgba(255, 193, 7, 0.4); }
+    }
+    .medium-risk-alert {
+        animation: glowWarning 2.5s infinite, fadeIn 0.5s ease-out;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.markdown(f"""
-    <div style="
+    <div class="medium-risk-alert" style="
         background: linear-gradient(135deg, #ffc10733, #ffc10755);
         border: 2px solid #ffc107;
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 20px;
         margin: 15px 0;
     ">
@@ -141,14 +153,25 @@ def _render_low_risk_alert(message: str, confidence: float) -> None:
 def render_no_alert_message() -> None:
     """Render a message when no alert is needed."""
     st.markdown("""
-    <div style="
-        background: #28a74522;
+    <style>
+    @keyframes successGlow {
+        0% { opacity: 0; transform: scale(0.95); }
+        50% { transform: scale(1.02); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+    .success-alert {
+        animation: successGlow 0.6s ease-out;
+    }
+    </style>
+    <div class="success-alert" style="
+        background: linear-gradient(135deg, #28a74522, #28a74540);
         border-left: 4px solid #28a745;
-        border-radius: 5px;
-        padding: 15px;
+        border-radius: 0 12px 12px 0;
+        padding: 15px 20px;
         margin: 10px 0;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.15);
     ">
-        <p style="color: #155724; margin: 0;">
+        <p style="color: #155724; margin: 0; font-size: 1.05rem;">
             ✅ <strong>No alerts generated</strong> - Risk level is within acceptable range.
         </p>
     </div>

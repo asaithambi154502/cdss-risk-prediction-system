@@ -10,7 +10,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import SYMPTOMS_LIST, VITAL_SIGNS, EXISTING_CONDITIONS
+from config import (
+    SYMPTOMS_LIST, VITAL_SIGNS, EXISTING_CONDITIONS,
+    EXTENDED_VITAL_SIGNS, PAIN_SCORE_LABELS, GCS_INTERPRETATION
+)
 
 
 def render_patient_demographics() -> Dict:
@@ -123,6 +126,139 @@ def render_vital_signs() -> Dict:
     return vitals
 
 
+def get_vital_status(value: float, config: dict) -> tuple:
+    """
+    Determine the status of a vital sign value.
+    
+    Returns:
+        Tuple of (status_emoji, status_text, status_color)
+        🟢 = Normal, 🟡 = Warning, 🔴 = Critical
+    """
+    # Check for critical values first
+    if 'critical_low' in config and value <= config['critical_low']:
+        return "🔴", "Critical (Low)", "red"
+    if 'critical_high' in config and value >= config['critical_high']:
+        return "🔴", "Critical (High)", "red"
+    
+    # Check for warning values
+    if 'warning_low' in config and value <= config['warning_low']:
+        return "🟡", "Warning (Low)", "orange"
+    if 'warning_high' in config and value >= config['warning_high']:
+        return "🟡", "Warning (High)", "orange"
+    
+    # Check if within normal range
+    normal_min = config.get('normal_min', float('-inf'))
+    normal_max = config.get('normal_max', float('inf'))
+    
+    if normal_min <= value <= normal_max:
+        return "🟢", "Normal", "green"
+    else:
+        return "🟡", "Abnormal", "orange"
+
+
+def render_extended_vitals() -> Dict:
+    """Render extended vital signs input form with visual status indicators."""
+    st.subheader("📈 Extended Vital Signs")
+    st.caption("Additional clinical indicators for comprehensive assessment")
+    
+    extended = {}
+    
+    # Row 1: Blood Sugar and Weight/Height/BMI
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        blood_sugar_config = EXTENDED_VITAL_SIGNS['blood_sugar']
+        extended['blood_sugar'] = st.number_input(
+            f"{blood_sugar_config['label']} ({blood_sugar_config['unit']})",
+            min_value=blood_sugar_config['input_min'],
+            max_value=blood_sugar_config['input_max'],
+            value=blood_sugar_config['default'],
+            help=blood_sugar_config['help']
+        )
+        # Show status indicator
+        status_emoji, status_text, _ = get_vital_status(extended['blood_sugar'], blood_sugar_config)
+        st.caption(f"{status_emoji} {status_text}")
+    
+    with col2:
+        weight_config = EXTENDED_VITAL_SIGNS['body_weight']
+        extended['body_weight'] = st.number_input(
+            f"{weight_config['label']} ({weight_config['unit']})",
+            min_value=float(weight_config['input_min']),
+            max_value=float(weight_config['input_max']),
+            value=float(weight_config['default']),
+            step=0.5,
+            help=weight_config['help']
+        )
+    
+    with col3:
+        height_config = EXTENDED_VITAL_SIGNS['height']
+        extended['height'] = st.number_input(
+            f"{height_config['label']} ({height_config['unit']})",
+            min_value=float(height_config['input_min']),
+            max_value=float(height_config['input_max']),
+            value=float(height_config['default']),
+            step=1.0,
+            help=height_config['help']
+        )
+    
+    # Calculate and display BMI
+    if extended['height'] > 0:
+        height_m = extended['height'] / 100
+        extended['bmi'] = round(extended['body_weight'] / (height_m ** 2), 1)
+        
+        bmi_config = EXTENDED_VITAL_SIGNS['bmi']
+        status_emoji, status_text, status_color = get_vital_status(extended['bmi'], bmi_config)
+        
+        st.markdown(f"""
+        <div style="background-color: {'#d4edda' if status_color == 'green' else '#fff3cd' if status_color == 'orange' else '#f8d7da'}; 
+                    padding: 10px; border-radius: 5px; margin: 5px 0;">
+            <strong>📊 BMI: {extended['bmi']} {bmi_config['unit']}</strong> {status_emoji} {status_text}
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        extended['bmi'] = 0
+    
+    st.divider()
+    
+    # Row 2: Pain Score and Consciousness
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        pain_config = EXTENDED_VITAL_SIGNS['pain_score']
+        extended['pain_score'] = st.slider(
+            f"{pain_config['label']} {pain_config['unit']}",
+            min_value=pain_config['input_min'],
+            max_value=pain_config['input_max'],
+            value=pain_config['default'],
+            help=pain_config['help']
+        )
+        # Show pain description and status
+        pain_label = PAIN_SCORE_LABELS.get(extended['pain_score'], "Unknown")
+        status_emoji, status_text, _ = get_vital_status(extended['pain_score'], pain_config)
+        st.caption(f"{status_emoji} {pain_label} - {status_text}")
+    
+    with col2:
+        gcs_config = EXTENDED_VITAL_SIGNS['consciousness_gcs']
+        extended['consciousness_gcs'] = st.number_input(
+            f"{gcs_config['label']} ({gcs_config['unit']})",
+            min_value=gcs_config['input_min'],
+            max_value=gcs_config['input_max'],
+            value=gcs_config['default'],
+            help=gcs_config['help']
+        )
+        # Show GCS interpretation
+        gcs_val = extended['consciousness_gcs']
+        gcs_interp = "Unknown"
+        for (low, high), label in GCS_INTERPRETATION.items():
+            if low <= gcs_val <= high:
+                gcs_interp = label
+                break
+        status_emoji, status_text, _ = get_vital_status(gcs_val, gcs_config)
+        st.caption(f"{status_emoji} {gcs_interp}")
+    
+    return extended
+
+
 def render_medical_history() -> Dict:
     """Render medical history/existing conditions form."""
     st.subheader("📋 Medical History")
@@ -174,6 +310,13 @@ def render_complete_form() -> Dict:
     
     st.divider()
     
+    # Extended Vital Signs
+    with st.container():
+        extended_vitals = render_extended_vitals()
+        patient_data.update(extended_vitals)
+    
+    st.divider()
+    
     # Medical History
     with st.container():
         history = render_medical_history()
@@ -202,4 +345,29 @@ def validate_patient_data(data: Dict) -> tuple:
     if data.get('heart_rate', 75) < 40 or data.get('heart_rate', 75) > 180:
         errors.append("⚠️ Warning: Abnormal heart rate detected")
     
-    return len([e for e in errors if not e.startswith("⚠️")]) == 0, errors
+    # Check extended vital signs
+    blood_sugar = data.get('blood_sugar', 90)
+    if blood_sugar < 50:
+        errors.append("🔴 Critical: Dangerously low blood sugar (hypoglycemia)")
+    elif blood_sugar > 200:
+        errors.append("🔴 Critical: Very high blood sugar detected")
+    elif blood_sugar < 70 or blood_sugar > 125:
+        errors.append("⚠️ Warning: Abnormal blood sugar level")
+    
+    bmi = data.get('bmi', 22)
+    if bmi < 15 or bmi > 40:
+        errors.append("⚠️ Warning: BMI in critical range")
+    
+    pain_score = data.get('pain_score', 0)
+    if pain_score >= 8:
+        errors.append("🔴 Critical: Severe pain reported")
+    elif pain_score >= 6:
+        errors.append("⚠️ Warning: Significant pain reported")
+    
+    gcs = data.get('consciousness_gcs', 15)
+    if gcs <= 8:
+        errors.append("🔴 Critical: Severe consciousness impairment (GCS ≤ 8)")
+    elif gcs <= 12:
+        errors.append("⚠️ Warning: Consciousness impairment detected")
+    
+    return len([e for e in errors if not e.startswith("⚠️") and not e.startswith("🔴")]) == 0, errors

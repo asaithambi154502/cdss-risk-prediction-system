@@ -156,6 +156,15 @@ def main():
     st.markdown("""
     <style>
     /* ========================================
+       HIDE STREAMLIT BRANDING
+       Remove default menu, footer, header
+    ======================================== */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display: none;}
+    
+    /* ========================================
        HEALTHCARE THEME - Color Palette
        Primary: #0077b6 (Medical Blue)
        Secondary: #28a745 (Health Green)

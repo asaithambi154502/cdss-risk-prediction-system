@@ -194,8 +194,8 @@ Prediction logs contain only anonymized clinical data for quality improvement pu
 
 # Streamlit page configuration
 PAGE_CONFIG = {
-    "page_title": "CDSS - Medical Risk Prediction",
+    "page_title": "CDSS - Clinical Decision Support System",
     "page_icon": "🏥",
-    "layout": "wide",
-    "initial_sidebar_state": "expanded"
+    "layout": "centered",
+    "initial_sidebar_state": "collapsed"
 }

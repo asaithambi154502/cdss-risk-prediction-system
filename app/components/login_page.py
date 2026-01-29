@@ -21,75 +21,241 @@ from app.auth import (
 
 def render_login_page() -> bool:
     """
-    Render the login page.
+    Render the login page with enhanced animations and healthcare theming.
     
     Returns:
         True if login was successful, False otherwise
     """
+    # Initialize session state for login animation
+    if 'login_error' not in st.session_state:
+        st.session_state.login_error = False
+    
+    # Enhanced CSS with animated gradient background, shake effect, and success animation
+    st.markdown("""
+    <style>
+    /* Animated Gradient Background */
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* Float in animation */
+    @keyframes floatIn {
+        0% { opacity: 0; transform: translateY(-30px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Soft pulse for icon */
+    @keyframes pulse-soft {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+    }
+    
+    /* Shake animation for login failure */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+        20%, 40%, 60%, 80% { transform: translateX(8px); }
+    }
+    
+    /* Success checkmark animation */
+    @keyframes successPop {
+        0% { transform: scale(0); opacity: 0; }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Glow effect */
+    @keyframes glow {
+        0%, 100% { box-shadow: 0 0 20px rgba(0, 119, 182, 0.3); }
+        50% { box-shadow: 0 0 40px rgba(0, 119, 182, 0.6); }
+    }
+    
+    /* Animated background wrapper */
+    .login-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(-45deg, #e3f2fd, #bbdefb, #e8f5e9, #c8e6c9);
+        background-size: 400% 400%;
+        animation: gradientShift 15s ease infinite;
+        z-index: -1;
+    }
+    
+    /* Login header styling */
+    .login-header {
+        animation: floatIn 0.8s ease-out;
+        text-align: center;
+        padding: 2rem 0;
+    }
+    
+    .login-icon {
+        animation: pulse-soft 3s infinite ease-in-out;
+        display: inline-block;
+        font-size: 5rem;
+        margin-bottom: 1rem;
+        filter: drop-shadow(0 4px 8px rgba(0, 119, 182, 0.3));
+    }
+    
+    .login-title {
+        color: #0077b6;
+        margin-bottom: 0.5rem;
+        font-size: 2.8rem;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0, 119, 182, 0.1);
+    }
+    
+    .login-subtitle {
+        color: #555;
+        font-size: 1.2rem;
+        margin: 0.5rem 0;
+        font-weight: 500;
+    }
+    
+    .login-tagline {
+        color: #777;
+        font-size: 0.95rem;
+        margin: 0;
+    }
+    
+    /* Login card with glassmorphism */
+    .login-card {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 2rem;
+        border-radius: 24px;
+        box-shadow: 0 8px 32px rgba(0, 119, 182, 0.15), 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        animation: floatIn 0.8s ease-out 0.2s both, glow 4s ease-in-out infinite;
+    }
+    
+    /* Shake animation class for error */
+    .shake-error {
+        animation: shake 0.6s ease-in-out;
+    }
+    
+    /* Success animation */
+    .success-checkmark {
+        animation: successPop 0.5s ease-out;
+        display: inline-block;
+    }
+    
+    /* Demo credentials styling */
+    .demo-creds {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    .demo-creds table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .demo-creds th, .demo-creds td {
+        padding: 0.5rem;
+        text-align: left;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    /* Security notice with subtle animation */
+    .security-notice {
+        text-align: center;
+        margin-top: 2rem;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border-radius: 12px;
+        border: 1px solid #90caf9;
+        animation: floatIn 1s ease-out 0.4s both;
+    }
+    
+    .security-notice p {
+        color: #1565c0;
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    /* Footer styling */
+    .login-footer {
+        text-align: center;
+        margin-top: 2rem;
+        animation: floatIn 1s ease-out 0.6s both;
+    }
+    
+    .login-footer p {
+        color: #888;
+        font-size: 0.8rem;
+    }
+    
+    /* Medical icons decoration */
+    .medical-icons {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 1rem;
+        opacity: 0.6;
+    }
+    
+    .medical-icons span {
+        font-size: 1.5rem;
+    }
+    </style>
+    
+    <!-- Animated gradient background -->
+    <div class="login-bg"></div>
+    """, unsafe_allow_html=True)
+    
     # Center the login form
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        # Header with logo - animated
+        # Header with animated logo
         st.markdown("""
-        <style>
-        @keyframes floatIn {
-            0% { opacity: 0; transform: translateY(-20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulse-soft {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        .login-header {
-            animation: floatIn 0.8s ease-out;
-        }
-        .login-icon {
-            animation: pulse-soft 3s infinite ease-in-out;
-            display: inline-block;
-        }
-        </style>
-        <div class="login-header" style="text-align: center; padding: 2rem 0;">
-            <div class="login-icon" style="font-size: 4rem; margin-bottom: 1rem;">🏥</div>
-            <h1 style="color: #0077b6; margin-bottom: 0.5rem; font-size: 2.5rem;">CDSS</h1>
-            <p style="color: #666; font-size: 1.2rem; margin: 0.5rem 0;">Clinical Decision Support System</p>
-            <p style="color: #888; font-size: 0.9rem; margin: 0;">AI-Based Medical Error Risk Prediction</p>
+        <div class="login-header">
+            <div class="login-icon">🏥</div>
+            <h1 class="login-title">CDSS</h1>
+            <p class="login-subtitle">Clinical Decision Support System</p>
+            <p class="login-tagline">AI-Based Medical Error Risk Prediction</p>
+            <div class="medical-icons">
+                <span>💉</span>
+                <span>🩺</span>
+                <span>💊</span>
+                <span>🔬</span>
+                <span>❤️</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Login card with glassmorphism
-        st.markdown("""
-        <style>
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 119, 182, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            animation: floatIn 0.8s ease-out 0.2s both;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+        # Apply shake animation if there was an error
+        card_class = "login-card shake-error" if st.session_state.login_error else "login-card"
         
         with st.container():
-            st.subheader("🔐 Login")
+            st.subheader("🔐 Secure Login")
             st.caption("Please enter your credentials to access the system")
             
             # Login form
             with st.form("login_form"):
                 username = st.text_input(
-                    "Username",
+                    "👤 Username",
                     placeholder="Enter your username",
                     key="login_username"
                 )
                 
                 password = st.text_input(
-                    "Password",
+                    "🔑 Password",
                     type="password",
                     placeholder="Enter your password",
                     key="login_password"
                 )
+                
+                # Remember me checkbox
+                remember_me = st.checkbox("Remember me", value=False)
                 
                 col_btn1, col_btn2 = st.columns([1, 1])
                 with col_btn1:
@@ -101,50 +267,73 @@ def render_login_page() -> bool:
             
             if submitted:
                 if not username or not password:
-                    st.error("❌ Please enter both username and password")
+                    st.session_state.login_error = True
+                    st.markdown("""
+                    <div class="shake-error">
+                        <p style="color: #dc3545; font-weight: 500;">❌ Please enter both username and password</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.rerun()
                     return False
                 
                 success, user = authenticate(username, password)
                 
                 if success and user:
+                    st.session_state.login_error = False
                     login_user(user)
-                    st.success(f"✅ Welcome, {user.name}!")
+                    # Show success animation
+                    st.markdown(f"""
+                    <div style="text-align: center; padding: 1rem;">
+                        <span class="success-checkmark" style="font-size: 3rem;">✅</span>
+                        <h3 style="color: #28a745; margin-top: 0.5rem;">Welcome, {user.name}!</h3>
+                        <p style="color: #666;">Redirecting to dashboard...</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    import time
+                    time.sleep(0.5)
                     st.rerun()
                     return True
                 else:
+                    st.session_state.login_error = True
                     st.error("❌ Invalid username or password")
+                    st.rerun()
                     return False
+            else:
+                # Reset error state when not submitting
+                if st.session_state.login_error:
+                    st.session_state.login_error = False
         
         # Demo credentials info
         st.divider()
         
         with st.expander("ℹ️ Demo Credentials", expanded=False):
             st.markdown("""
-            **For testing purposes, use these credentials:**
+            <div class="demo-creds">
+            <p style="margin-bottom: 0.5rem;"><strong>For testing purposes, use these credentials:</strong></p>
+            </div>
+            """, unsafe_allow_html=True)
             
+            st.markdown("""
             | Role | Username | Password |
-            |------|----------|----------|
-            | 👨‍⚕️ Doctor | `doctor1` | `doctor123` |
-            | 💊 Pharmacist | `pharmacist1` | `pharma123` |
-            | 🔧 Admin | `admin` | `admin123` |
+            |:-----|:---------|:---------|
+            | 👨‍⚕️ **Doctor** | `doctor1` | `doctor123` |
+            | 💊 **Pharmacist** | `pharmacist1` | `pharma123` |
+            | 🔧 **Admin** | `admin` | `admin123` |
             
-            *Note: In production, credentials would be managed by hospital IT systems.*
+            > 💡 *In production, credentials would be managed by hospital IT systems.*
             """)
         
-        # Security notice
+        # Security notice with animation
         st.markdown("""
-        <div style="text-align: center; margin-top: 2rem; padding: 1rem; 
-                    background: #e3f2fd; border-radius: 8px; border: 1px solid #90caf9;">
-            <p style="color: #1565c0; margin: 0; font-size: 0.85rem;">
-                🔒 This system uses secure authentication to protect patient data privacy.
-            </p>
+        <div class="security-notice">
+            <p>🔒 This system uses secure authentication to protect patient data privacy.</p>
         </div>
         """, unsafe_allow_html=True)
         
         # Footer
         st.markdown("""
-        <div style="text-align: center; margin-top: 2rem;">
-            <p style="color: #999; font-size: 0.8rem;">
+        <div class="login-footer">
+            <p>
                 © 2024 CDSS Risk Prediction System<br>
                 For educational and demonstration purposes only
             </p>

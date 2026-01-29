@@ -182,7 +182,9 @@ def main():
        Warning: #ffc107, Critical: #dc3545
     ======================================== */
     
-    /* Global Animations */
+    /* ========================================
+       GLOBAL ANIMATIONS
+    ======================================== */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -191,6 +193,11 @@ def main():
     @keyframes slideUp {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(30px); }
+        to { opacity: 1; transform: translateX(0); }
     }
     
     @keyframes pulse {
@@ -215,13 +222,53 @@ def main():
         100% { transform: scale(1); opacity: 1; }
     }
     
-    /* Main Container */
+    /* NEW: Breathing effect for alerts */
+    @keyframes breathe {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.9; transform: scale(1.01); }
+    }
+    
+    /* NEW: Alert attention effect */
+    @keyframes alertAttention {
+        0%, 100% { box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3); }
+        50% { box-shadow: 0 4px 25px rgba(220, 53, 69, 0.6); }
+    }
+    
+    /* NEW: Animated progress bar */
+    @keyframes progressFill {
+        from { width: 0%; }
+        to { width: var(--progress-width, 100%); }
+    }
+    
+    /* NEW: Counter animation for numbers */
+    @keyframes countUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* NEW: Ripple effect */
+    @keyframes ripple {
+        0% { transform: scale(0.8); opacity: 1; }
+        100% { transform: scale(2); opacity: 0; }
+    }
+    
+    /* NEW: Heartbeat for critical alerts */
+    @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        14% { transform: scale(1.1); }
+        28% { transform: scale(1); }
+        42% { transform: scale(1.1); }
+        70% { transform: scale(1); }
+    }
+    
+    /* ========================================
+       MAIN CONTAINER & HEADINGS
+    ======================================== */
     .main > div {
         padding-top: 2rem;
         animation: fadeIn 0.5s ease-out;
     }
     
-    /* Healthcare-themed headings */
     h1 {
         color: #023e8a;
         animation: slideUp 0.6s ease-out;
@@ -231,7 +278,9 @@ def main():
         animation: fadeIn 0.4s ease-out;
     }
     
-    /* Professional Button Styling */
+    /* ========================================
+       PROFESSIONAL BUTTON STYLING
+    ======================================== */
     .stButton > button {
         width: 100%;
         background: linear-gradient(135deg, #0077b6 0%, #023e8a 100%);
@@ -243,17 +292,37 @@ def main():
         border-radius: 12px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 4px 15px rgba(0, 119, 182, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    .stButton > button::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.4s, height 0.4s;
     }
     .stButton > button:hover {
         transform: translateY(-3px);
         box-shadow: 0 8px 25px rgba(0, 119, 182, 0.5);
         background: linear-gradient(135deg, #0096c7 0%, #0077b6 100%);
     }
+    .stButton > button:hover::after {
+        width: 300px;
+        height: 300px;
+    }
     .stButton > button:active {
         transform: translateY(-1px);
     }
     
-    /* Glassmorphism Cards */
+    /* ========================================
+       GLASSMORPHISM CARDS
+    ======================================== */
     .glass-card {
         background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
@@ -264,7 +333,9 @@ def main():
         animation: fadeIn 0.5s ease-out;
     }
     
-    /* Healthcare Info Boxes */
+    /* ========================================
+       HEALTHCARE INFO BOXES
+    ======================================== */
     .healthcare-box {
         background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
         border-left: 4px solid #0077b6;
@@ -288,18 +359,69 @@ def main():
         animation: successPop 0.5s ease-out;
     }
     
-    /* Risk Level Animations */
+    /* ========================================
+       RISK LEVEL ANIMATIONS
+    ======================================== */
     .risk-low {
         animation: successPop 0.5s ease-out;
     }
     .risk-medium {
-        animation: glow 2s infinite;
+        animation: glow 2s infinite, breathe 3s infinite;
     }
     .risk-high {
-        animation: pulse 1.5s infinite;
+        animation: pulse 1.5s infinite, alertAttention 2s infinite;
+    }
+    .risk-critical {
+        animation: heartbeat 1.5s infinite, alertAttention 1s infinite;
     }
     
-    /* Tab Styling */
+    /* ========================================
+       ANIMATED PROGRESS BARS
+    ======================================== */
+    .progress-container {
+        background: #e9ecef;
+        border-radius: 10px;
+        height: 12px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    .progress-bar {
+        height: 100%;
+        border-radius: 10px;
+        animation: progressFill 1s ease-out forwards;
+        background: linear-gradient(90deg, #0077b6, #00b4d8);
+        box-shadow: 0 0 10px rgba(0, 119, 182, 0.5);
+    }
+    .progress-bar.low {
+        background: linear-gradient(90deg, #28a745, #20c997);
+    }
+    .progress-bar.medium {
+        background: linear-gradient(90deg, #ffc107, #fd7e14);
+    }
+    .progress-bar.high {
+        background: linear-gradient(90deg, #dc3545, #c82333);
+    }
+    
+    /* ========================================
+       RESULT CARDS WITH FADE-IN
+    ======================================== */
+    .result-card {
+        animation: slideInRight 0.6s ease-out;
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin: 1rem 0;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .result-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    /* ========================================
+       TAB STYLING WITH SMOOTH TRANSITIONS
+    ======================================== */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background: transparent;
@@ -308,21 +430,25 @@ def main():
         background: linear-gradient(135deg, #f8f9fa, #e9ecef);
         border-radius: 12px 12px 0 0;
         padding: 12px 24px;
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         border: 1px solid #dee2e6;
         border-bottom: none;
     }
     .stTabs [data-baseweb="tab"]:hover {
-        background: linear-gradient(135deg, #e9ecef, #dee2e6);
-        transform: translateY(-2px);
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 119, 182, 0.15);
     }
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #0077b6, #023e8a);
         color: white;
-        box-shadow: 0 4px 15px rgba(0, 119, 182, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 119, 182, 0.4);
+        transform: translateY(-2px);
     }
     
-    /* Input Field Styling */
+    /* ========================================
+       INPUT FIELD STYLING
+    ======================================== */
     .stTextInput > div > div > input,
     .stNumberInput > div > div > input,
     .stSelectbox > div > div {
@@ -333,10 +459,12 @@ def main():
     .stTextInput > div > div > input:focus,
     .stNumberInput > div > div > input:focus {
         border-color: #0077b6;
-        box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.1);
+        box-shadow: 0 0 0 4px rgba(0, 119, 182, 0.1);
     }
     
-    /* Expander Styling */
+    /* ========================================
+       EXPANDER STYLING
+    ======================================== */
     .streamlit-expanderHeader {
         background: linear-gradient(135deg, #f8f9fa, #ffffff);
         border-radius: 10px;
@@ -344,9 +472,12 @@ def main():
     }
     .streamlit-expanderHeader:hover {
         background: linear-gradient(135deg, #e3f2fd, #f8f9fa);
+        box-shadow: 0 2px 8px rgba(0, 119, 182, 0.1);
     }
     
-    /* Divider with medical styling */
+    /* ========================================
+       DIVIDER WITH MEDICAL STYLING
+    ======================================== */
     hr {
         border: none;
         height: 2px;
@@ -354,18 +485,45 @@ def main():
         margin: 1.5rem 0;
     }
     
-    /* Loading Animation Enhancement */
+    /* ========================================
+       LOADING ANIMATION ENHANCEMENT
+    ======================================== */
     .stSpinner > div {
         border-color: #0077b6 transparent transparent transparent;
     }
     
-    /* Metric Cards */
+    /* Custom loading overlay */
+    .loading-overlay {
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        padding: 2rem;
+    }
+    .loading-pulse {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0077b6, #00b4d8);
+        animation: pulse 1.5s infinite;
+    }
+    
+    /* ========================================
+       METRIC CARDS
+    ======================================== */
     [data-testid="stMetricValue"] {
         color: #023e8a;
         font-weight: 700;
+        animation: countUp 0.6s ease-out;
+    }
+    [data-testid="stMetricDelta"] {
+        animation: fadeIn 0.4s ease-out 0.2s both;
     }
     
-    /* Scrollbar Styling */
+    /* ========================================
+       SCROLLBAR STYLING
+    ======================================== */
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -380,6 +538,33 @@ def main():
     }
     ::-webkit-scrollbar-thumb:hover {
         background: linear-gradient(180deg, #0096c7, #0077b6);
+    }
+    
+    /* ========================================
+       ACCESSIBILITY - Reduced Motion
+    ======================================== */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+    
+    /* ========================================
+       ALERT ENHANCEMENTS
+    ======================================== */
+    .alert-critical {
+        animation: heartbeat 1.5s infinite, alertAttention 1s infinite;
+        border-left: 4px solid #dc3545;
+    }
+    .alert-warning {
+        animation: breathe 2s infinite;
+        border-left: 4px solid #ffc107;
+    }
+    .alert-info {
+        animation: fadeIn 0.5s ease-out;
+        border-left: 4px solid #0077b6;
     }
     </style>
     """, unsafe_allow_html=True)

@@ -56,37 +56,86 @@ def _should_display_alert(risk_level: str) -> bool:
 
 
 def _render_high_risk_alert(message: str, confidence: float, recommendations: Optional[List[str]]) -> None:
-    """Render a high-risk critical alert."""
+    """Render a high-risk critical alert with enhanced animations."""
     st.markdown("""
     <style>
     @keyframes pulse {
         0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
         100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
     }
+    @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        14% { transform: scale(1.05); }
+        28% { transform: scale(1); }
+        42% { transform: scale(1.05); }
+        70% { transform: scale(1); }
+    }
+    @keyframes slideInAlert {
+        0% { opacity: 0; transform: translateX(30px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes attentionGlow {
+        0%, 100% { box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4); }
+        50% { box-shadow: 0 4px 35px rgba(220, 53, 69, 0.7); }
+    }
     .high-risk-alert {
-        animation: pulse 2s infinite;
+        animation: slideInAlert 0.5s ease-out, pulse 2s infinite, attentionGlow 2s infinite;
+    }
+    .alert-icon {
+        animation: heartbeat 1.5s infinite;
+        display: inline-block;
     }
     </style>
     """, unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class="high-risk-alert" style="
-        background: linear-gradient(135deg, #dc354533, #dc354566);
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.15), rgba(220, 53, 69, 0.25));
         border: 2px solid #dc3545;
-        border-radius: 10px;
-        padding: 20px;
+        border-radius: 16px;
+        padding: 24px;
         margin: 15px 0;
+        position: relative;
+        overflow: hidden;
     ">
-        <h2 style="color: #dc3545; margin: 0 0 10px 0;">
-            🚨 CRITICAL ALERT - HIGH RISK DETECTED
+        <div style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #dc3545, #ff6b6b, #dc3545);
+            background-size: 200% 100%;
+            animation: shimmer 2s linear infinite;
+        "></div>
+        <h2 style="color: #dc3545; margin: 0 0 12px 0; display: flex; align-items: center; gap: 10px;">
+            <span class="alert-icon">🚨</span> CRITICAL ALERT - HIGH RISK DETECTED
         </h2>
-        <p style="color: #333; font-size: 1.1rem; margin: 10px 0;">
+        <p style="color: #333; font-size: 1.1rem; margin: 12px 0; line-height: 1.5;">
             {message}
         </p>
-        <p style="color: #666; font-size: 0.9rem;">
-            Confidence: <strong>{confidence:.1%}</strong>
-        </p>
+        <div style="
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        ">
+            <div style="
+                background: rgba(220, 53, 69, 0.15);
+                border-radius: 20px;
+                padding: 8px 16px;
+            ">
+                <span style="color: #dc3545; font-weight: 600;">⚡ Confidence: {confidence:.1%}</span>
+            </div>
+            <div style="
+                background: rgba(220, 53, 69, 0.1);
+                border-radius: 20px;
+                padding: 8px 16px;
+            ">
+                <span style="color: #856404; font-weight: 500;">🔔 Immediate Review Required</span>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     

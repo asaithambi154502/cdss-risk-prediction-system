@@ -196,6 +196,229 @@ Prediction logs contain only anonymized clinical data for quality improvement pu
 PAGE_CONFIG = {
     "page_title": "CDSS - Clinical Decision Support System",
     "page_icon": "🏥",
-    "layout": "centered",
-    "initial_sidebar_state": "collapsed"
+    "layout": "wide",
+    "initial_sidebar_state": "expanded"
 }
+
+# ============================================================================
+# EXPLAINABLE AI (XAI) CONFIGURATION
+# ============================================================================
+
+XAI_CONFIG = {
+    "default_method": "shap",          # Options: "shap", "lime", "both"
+    "top_features_count": 5,           # Number of top contributing factors to show
+    "generate_on_demand": True,        # If True, only generate when user requests
+    "shap_max_samples": 100,           # Max samples for SHAP background dataset
+    "lime_num_features": 10,           # Number of features for LIME explanation
+    "show_visualization": True,        # Show waterfall/bar charts
+    "show_narrative": True,            # Show text-based explanations
+}
+
+# Feature display names for explanations
+FEATURE_DISPLAY_NAMES = {
+    "age": "Patient Age",
+    "heart_rate": "Heart Rate",
+    "blood_pressure_systolic": "Systolic Blood Pressure",
+    "blood_pressure_diastolic": "Diastolic Blood Pressure",
+    "temperature": "Body Temperature",
+    "respiratory_rate": "Respiratory Rate",
+    "oxygen_saturation": "Oxygen Saturation (SpO2)",
+    "symptom_count": "Number of Symptoms",
+    "num_medications": "Number of Medications",
+    "fever": "Fever Present",
+    "cough": "Cough Present",
+    "fatigue": "Fatigue Present",
+    "chest_pain": "Chest Pain",
+    "shortness_of_breath": "Difficulty Breathing",
+    "confusion": "Confusion/Altered Mental State",
+    "blood_sugar": "Blood Sugar Level",
+    "pain_score": "Pain Score",
+    "consciousness_gcs": "Glasgow Coma Scale",
+}
+
+# ============================================================================
+# SMART ALERT FATIGUE REDUCTION CONFIGURATION
+# ============================================================================
+
+ALERT_PRIORITY_CONFIG = {
+    # Alert priority levels
+    "levels": {
+        "CRITICAL": {"color": "#dc3545", "icon": "🚨", "display_time": None, "sound": True},
+        "HIGH": {"color": "#fd7e14", "icon": "⚠️", "display_time": 30, "sound": False},
+        "MEDIUM": {"color": "#ffc107", "icon": "📋", "display_time": 15, "sound": False},
+        "LOW": {"color": "#17a2b8", "icon": "ℹ️", "display_time": 5, "sound": False},
+    },
+    # Suppression rules
+    "suppression": {
+        "min_interval_minutes": 15,        # Minimum time between similar alerts
+        "max_low_alerts_per_hour": 5,      # Max low-priority alerts per hour
+        "suppress_repeated_low": True,      # Suppress repeated low-risk alerts
+        "consecutive_threshold": 3,         # After N same alerts, reduce priority
+    },
+    # Fatigue tracking
+    "fatigue_tracking": {
+        "alert_history_size": 100,         # Number of alerts to keep in history
+        "fatigue_threshold": 20,           # Alerts per hour that indicates fatigue
+        "auto_adjust_priority": True,      # Auto-adjust priorities based on fatigue
+    }
+}
+
+# ============================================================================
+# FHIR ELECTRONIC HEALTH RECORD (EHR) CONFIGURATION
+# ============================================================================
+
+FHIR_CONFIG = {
+    "version": "R4",                       # FHIR version (R4 is most common)
+    "base_url": None,                      # FHIR server URL (None = file-based only)
+    "enable_server_mode": False,           # Enable FHIR server connectivity
+    "sample_data_dir": BASE_DIR / "app" / "fhir" / "sample_bundles",
+    
+    # Resource mappings
+    "supported_resources": [
+        "Patient",
+        "Observation",
+        "MedicationStatement",
+        "Condition",
+        "AllergyIntolerance",
+        "Encounter"
+    ],
+    
+    # Observation code mappings (LOINC codes)
+    "observation_codes": {
+        "heart_rate": "8867-4",
+        "blood_pressure_systolic": "8480-6",
+        "blood_pressure_diastolic": "8462-4",
+        "temperature": "8310-5",
+        "respiratory_rate": "9279-1",
+        "oxygen_saturation": "2708-6",
+        "blood_sugar": "2339-0",
+    },
+}
+
+# ============================================================================
+# UNIFIED MULTI-RISK PREDICTION ENGINE CONFIGURATION
+# ============================================================================
+
+MULTI_RISK_CONFIG = {
+    # Risk types and their weights for overall score
+    "risk_types": {
+        "medication_error": {
+            "enabled": True,
+            "weight": 0.30,
+            "display_name": "Medication Error Risk",
+            "icon": "💊",
+            "color": "#e74c3c"
+        },
+        "disease_progression": {
+            "enabled": True,
+            "weight": 0.25,
+            "display_name": "Disease Progression Risk",
+            "icon": "🦠",
+            "color": "#9b59b6"
+        },
+        "adverse_event": {
+            "enabled": True,
+            "weight": 0.25,
+            "display_name": "Adverse Event Risk",
+            "icon": "⚡",
+            "color": "#f39c12"
+        },
+        "hospital_readmission": {
+            "enabled": True,
+            "weight": 0.20,
+            "display_name": "Hospital Readmission Risk",
+            "icon": "🏥",
+            "color": "#3498db"
+        },
+    },
+    
+    # Aggregation method for overall risk
+    "aggregation_method": "weighted_max",  # Options: "weighted_avg", "weighted_max", "highest"
+    
+    # Thresholds for each risk type (can be customized per risk)
+    "default_thresholds": {
+        "low": 0.3,
+        "medium": 0.6,
+        "high": 1.0
+    }
+}
+
+# ============================================================================
+# HYBRID INTELLIGENCE - CLINICAL RULES ENGINE CONFIGURATION
+# ============================================================================
+
+RULES_ENGINE_CONFIG = {
+    "enable_rules": True,
+    "rules_override_ml": False,           # If True, rules can override ML predictions
+    "combine_method": "conservative",      # Options: "conservative", "liberal", "ml_priority"
+    
+    # Rule categories
+    "rule_categories": {
+        "drug_interactions": True,
+        "vital_sign_alerts": True,
+        "age_safety": True,
+        "contraindications": True,
+        "allergy_checks": True,
+    }
+}
+
+# Drug interaction database (simplified - in production, use RxNorm or similar)
+DRUG_INTERACTIONS = {
+    # Severe interactions (will trigger CRITICAL alert)
+    "severe": [
+        {"drug1": "warfarin", "drug2": "aspirin", "effect": "Increased bleeding risk"},
+        {"drug1": "metformin", "drug2": "contrast_dye", "effect": "Lactic acidosis risk"},
+        {"drug1": "ssri", "drug2": "maoi", "effect": "Serotonin syndrome risk"},
+        {"drug1": "digoxin", "drug2": "amiodarone", "effect": "Digoxin toxicity"},
+        {"drug1": "ace_inhibitor", "drug2": "potassium", "effect": "Hyperkalemia risk"},
+    ],
+    # Moderate interactions (will trigger HIGH alert)
+    "moderate": [
+        {"drug1": "nsaid", "drug2": "ace_inhibitor", "effect": "Reduced antihypertensive effect"},
+        {"drug1": "statin", "drug2": "grapefruit", "effect": "Increased statin levels"},
+        {"drug1": "metformin", "drug2": "alcohol", "effect": "Hypoglycemia risk"},
+        {"drug1": "antibiotic", "drug2": "antacid", "effect": "Reduced antibiotic absorption"},
+    ],
+    # Minor interactions (will trigger MEDIUM alert)
+    "minor": [
+        {"drug1": "caffeine", "drug2": "antibiotic", "effect": "Increased caffeine effect"},
+    ]
+}
+
+# Vital sign critical thresholds for rules engine
+VITAL_CRITICAL_RULES = {
+    "heart_rate": {"critical_low": 40, "critical_high": 150},
+    "blood_pressure_systolic": {"critical_low": 70, "critical_high": 200},
+    "blood_pressure_diastolic": {"critical_low": 40, "critical_high": 120},
+    "temperature": {"critical_low": 35.0, "critical_high": 40.0},
+    "respiratory_rate": {"critical_low": 8, "critical_high": 30},
+    "oxygen_saturation": {"critical_low": 88, "critical_high": 100},
+    "blood_sugar": {"critical_low": 50, "critical_high": 400},
+}
+
+# Age-based medication safety rules
+AGE_SAFETY_RULES = {
+    "elderly_avoid": {
+        "min_age": 65,
+        "medications": ["benzodiazepines", "anticholinergics", "nsaid_long_term"],
+        "reason": "Increased risk of falls, confusion, and adverse effects in elderly"
+    },
+    "pediatric_caution": {
+        "max_age": 12,
+        "medications": ["aspirin", "fluoroquinolones"],
+        "reason": "Not recommended for pediatric patients"
+    }
+}
+
+# Common medication list for the system
+MEDICATION_LIST = [
+    "aspirin", "warfarin", "metformin", "lisinopril", "amlodipine",
+    "metoprolol", "atorvastatin", "omeprazole", "levothyroxine", "prednisone",
+    "furosemide", "gabapentin", "hydrochlorothiazide", "losartan", "albuterol",
+    "acetaminophen", "ibuprofen", "naproxen", "tramadol", "oxycodone",
+    "amoxicillin", "azithromycin", "ciprofloxacin", "doxycycline", "metronidazole",
+    "sertraline", "fluoxetine", "escitalopram", "duloxetine", "bupropion",
+    "alprazolam", "lorazepam", "zolpidem", "trazodone", "quetiapine",
+    "insulin", "glipizide", "sitagliptin", "empagliflozin", "liraglutide"
+]
+

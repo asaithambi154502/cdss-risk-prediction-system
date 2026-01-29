@@ -3,7 +3,7 @@ CDSS - Clinical Decision Support System
 Main Streamlit Application
 
 AI-Based Medical Error Risk Prediction System
-Enhanced with Security, Logging, and Professional UI
+Enhanced with XAI, Multi-Risk Engine, FHIR Support, and Hybrid Intelligence
 """
 
 import streamlit as st
@@ -15,7 +15,7 @@ import os
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from config import PAGE_CONFIG, MODEL_PATH, ENCODER_PATH
+from config import PAGE_CONFIG, MODEL_PATH, ENCODER_PATH, XAI_CONFIG
 from app.components.input_form import render_complete_form
 from app.components.risk_display import (
     render_risk_summary, 
@@ -33,6 +33,16 @@ from app.utils.validators import validate_patient_data, get_data_summary
 from app.utils.logger import get_logger, log_prediction, log_alert
 from ml.risk_classifier import RiskClassifier, AlertEngine
 from app.auth import is_authenticated, get_current_user, UserRole
+
+# New enhanced components
+from app.components.explanation_display import render_explanation_section, render_compact_explanation
+from app.components.multi_risk_dashboard import render_multi_risk_dashboard, render_compact_risk_summary
+from app.components.fhir_import import render_fhir_import_section, render_fhir_data_preview
+from ml.explainer import RiskExplainer, create_demo_explanation
+from ml.multi_risk_engine import MultiRiskEngine
+from ml.rules_engine import ClinicalRulesEngine, HybridDecisionEngine
+from ml.alert_prioritization import SmartAlertEngine
+from app.fhir.fhir_converter import FHIRConverter
 
 
 def load_model():
@@ -398,17 +408,41 @@ def main():
     
     st.divider()
     
-    # Navigation for admin
+    # Enhanced navigation with new features
     if user.is_admin():
-        tab_assessment, tab_logs = st.tabs(["🏥 Risk Assessment", "📊 System Logs"])
+        tabs = st.tabs([
+            "🏥 Risk Assessment", 
+            "🎯 Multi-Risk Dashboard",
+            "📥 FHIR Import",
+            "📊 System Logs"
+        ])
         
-        with tab_logs:
-            render_log_viewer()
-        
-        with tab_assessment:
+        with tabs[0]:
             render_risk_assessment_view(user)
+        
+        with tabs[1]:
+            render_multi_risk_view(user)
+        
+        with tabs[2]:
+            render_fhir_import_view()
+        
+        with tabs[3]:
+            render_log_viewer()
     else:
-        render_risk_assessment_view(user)
+        tabs = st.tabs([
+            "🏥 Risk Assessment",
+            "🎯 Multi-Risk Dashboard",
+            "📥 FHIR Import"
+        ])
+        
+        with tabs[0]:
+            render_risk_assessment_view(user)
+        
+        with tabs[1]:
+            render_multi_risk_view(user)
+        
+        with tabs[2]:
+            render_fhir_import_view()
 
 
 def render_risk_assessment_view(user):
@@ -519,23 +553,52 @@ def render_risk_assessment_view(user):
             # Render risk summary with gauge
             render_risk_summary(summary)
             
-            # Render alert
-            if assessment.should_alert:
+            # Smart Alert Integration
+            smart_engine = SmartAlertEngine()
+            smart_alert = smart_engine.prioritize_alert(
+                risk_level=assessment.risk_label,
+                risk_score=assessment.confidence,
+                message=assessment.alert_message or f"{assessment.risk_label} risk detected",
+                recommendations=assessment.recommendations or [],
+                patient_id=None,
+                source="ml"
+            )
+            
+            # Render alert with priority information
+            if assessment.should_alert and not smart_alert.was_suppressed:
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, {smart_alert.color}22, {smart_alert.color}11); 
+                            border-left: 4px solid {smart_alert.color}; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>{smart_alert.icon} {smart_alert.priority.name} PRIORITY ALERT</strong><br>
+                    <span style="color: #666;">Priority Score: {smart_alert.priority.value}/4</span>
+                </div>
+                """, unsafe_allow_html=True)
                 render_alert(
                     assessment.risk_label,
                     assessment.alert_message,
                     assessment.confidence,
                     assessment.recommendations
                 )
+            elif smart_alert.was_suppressed:
+                st.info(f"ℹ️ Alert suppressed: {smart_alert.suppression_reason}")
             else:
                 render_no_alert_message()
+            
+            # XAI Explanation Section
+            st.divider()
+            st.subheader("🧠 AI Explanation: Why This Risk Level?")
+            
+            # Generate XAI explanation
+            explanation = create_demo_explanation(assessment.risk_label)
+            render_explanation_section(explanation)
             
             # Patient summary
             render_patient_summary(data['patient_summary'])
             
-            # Feature importance
+            # Feature importance (now enhanced with XAI context)
             if data.get('feature_importance'):
-                render_feature_importance(data['feature_importance'])
+                with st.expander("📊 Model Feature Importance", expanded=False):
+                    render_feature_importance(data['feature_importance'])
             
             # Recommendations
             if assessment.recommendations:
@@ -544,5 +607,155 @@ def render_risk_assessment_view(user):
             st.info("👆 Enter patient information and click 'Analyze Risk' to get a risk assessment.")
 
 
+
+def render_multi_risk_view(user):
+    """Render the multi-risk assessment dashboard."""
+    st.header("🎯 Comprehensive Multi-Risk Assessment")
+    st.markdown("""
+    This dashboard provides a **unified assessment** across multiple risk categories:
+    - 💊 Medication Error Risk
+    - 📈 Disease Progression Risk  
+    - ⚠️ Adverse Event Risk
+    - 🏥 Hospital Readmission Risk
+    """)
+    
+    # Initialize session state
+    if 'multi_risk_assessment' not in st.session_state:
+        st.session_state.multi_risk_assessment = None
+    
+    # Input form
+    with st.expander("📝 Enter Patient Data", expanded=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            age = st.number_input("Age", min_value=0, max_value=120, value=65)
+            heart_rate = st.number_input("Heart Rate (bpm)", 40, 200, 80)
+            bp_systolic = st.number_input("Systolic BP (mmHg)", 70, 250, 120)
+            temperature = st.number_input("Temperature (°C)", 35.0, 42.0, 37.0)
+            oxygen_sat = st.number_input("SpO2 (%)", 70, 100, 97)
+        
+        with col2:
+            num_medications = st.number_input("Number of Medications", 0, 30, 3)
+            symptom_count = st.number_input("Number of Symptoms", 0, 20, 2)
+            
+            st.markdown("**Conditions:**")
+            has_diabetes = st.checkbox("Diabetes")
+            has_heart_disease = st.checkbox("Heart Disease")
+            has_kidney_disease = st.checkbox("Kidney Disease")
+    
+    # Compile patient data
+    patient_data = {
+        'age': age,
+        'heart_rate': heart_rate,
+        'blood_pressure_systolic': bp_systolic,
+        'temperature': temperature,
+        'oxygen_saturation': oxygen_sat,
+        'num_medications': num_medications,
+        'symptom_count': symptom_count,
+        'condition_diabetes': 1 if has_diabetes else 0,
+        'condition_heart_disease': 1 if has_heart_disease else 0,
+        'condition_kidney_disease': 1 if has_kidney_disease else 0,
+        'medications': [],
+        'allergies': []
+    }
+    
+    if st.button("🔍 Run Multi-Risk Analysis", type="primary", use_container_width=True):
+        with st.spinner("Analyzing all risk dimensions..."):
+            try:
+                multi_engine = MultiRiskEngine()
+                assessment = multi_engine.predict_all_risks(patient_data)
+                st.session_state.multi_risk_assessment = assessment
+            except Exception as e:
+                st.error(f"Analysis error: {e}")
+    
+    # Display results
+    if st.session_state.multi_risk_assessment:
+        st.divider()
+        render_multi_risk_dashboard(st.session_state.multi_risk_assessment)
+        
+        # Hybrid intelligence section
+        st.divider()
+        st.markdown("### 🧠 Hybrid Intelligence Analysis")
+        st.markdown("*Combining ML predictions with clinical safety rules*")
+        
+        with st.spinner("Running clinical rules checks..."):
+            try:
+                rules_engine = ClinicalRulesEngine()
+                rules_result = rules_engine.run_all_checks(patient_data)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Rules Passed", f"{rules_result.passed_rules}/{rules_result.total_rules}")
+                with col2:
+                    pass_rate = rules_result.pass_rate * 100
+                    st.metric("Compliance Rate", f"{pass_rate:.1f}%")
+                
+                st.markdown(f"**Status:** {rules_result.summary}")
+                
+                if rules_result.violations:
+                    with st.expander("⚠️ View Rule Violations", expanded=rules_result.has_critical):
+                        for violation in rules_result.violations:
+                            st.markdown(f"""
+                            <div style="border-left: 3px solid {violation.color}; padding-left: 10px; margin: 10px 0;">
+                                <strong>{violation.icon} {violation.rule_name}</strong><br>
+                                {violation.message}<br>
+                                <em>Recommendation: {violation.recommendation}</em>
+                            </div>
+                            """, unsafe_allow_html=True)
+            except Exception as e:
+                st.warning(f"Could not run clinical rules: {e}")
+
+
+def render_fhir_import_view():
+    """Render the FHIR data import view."""
+    st.header("📥 FHIR Patient Data Import")
+    st.markdown("""
+    Import patient data from **FHIR R4** formatted bundles for seamless EHR integration.
+    Supported resources: Patient, Observation, Condition, MedicationStatement, AllergyIntolerance
+    """)
+    
+    # Initialize session state
+    if 'fhir_data' not in st.session_state:
+        st.session_state.fhir_data = None
+    if 'fhir_patient_data' not in st.session_state:
+        st.session_state.fhir_patient_data = None
+    
+    def handle_import(bundle):
+        """Handle FHIR bundle import."""
+        try:
+            converter = FHIRConverter()
+            patient_data = converter.bundle_to_patient_data(bundle)
+            st.session_state.fhir_data = bundle
+            st.session_state.fhir_patient_data = patient_data
+            st.success("✅ FHIR data imported successfully!")
+        except Exception as e:
+            st.error(f"Import error: {e}")
+    
+    render_fhir_import_section(handle_import)
+    
+    # Display imported data
+    if st.session_state.fhir_patient_data:
+        st.divider()
+        render_fhir_data_preview(st.session_state.fhir_patient_data)
+        
+        # Option to analyze imported data
+        st.divider()
+        if st.button("🔍 Analyze Imported Patient", type="primary", use_container_width=True):
+            with st.spinner("Analyzing patient data..."):
+                try:
+                    # Convert FHIR patient data to dict format
+                    patient_data = st.session_state.fhir_patient_data.to_prediction_dict()
+                    
+                    # Run multi-risk analysis
+                    multi_engine = MultiRiskEngine()
+                    assessment = multi_engine.predict_all_risks(patient_data)
+                    
+                    st.divider()
+                    render_multi_risk_dashboard(assessment)
+                except Exception as e:
+                    st.error(f"Analysis error: {e}")
+
+
 if __name__ == "__main__":
     main()
+

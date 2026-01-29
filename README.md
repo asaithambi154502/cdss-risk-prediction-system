@@ -2,18 +2,29 @@
 
 **AI-Based Medical Error Risk Prediction System**
 
-An intelligent web-based Clinical Decision Support System that uses Machine Learning to predict medical error risk and provide meaningful, low-fatigue alerts to healthcare professionals.
+An intelligent web-based Clinical Decision Support System that uses Machine Learning, Explainable AI, and Clinical Rules to predict medical risks and provide meaningful, low-fatigue alerts to healthcare professionals.
 
 ---
 
 ## 🌟 Features
 
-- **ML-Based Risk Prediction**: Uses Random Forest, Logistic Regression, or Decision Tree models
+### Core Capabilities
+- **ML-Based Risk Prediction**: Uses Random Forest, XGBoost, Logistic Regression, or Decision Tree models
 - **Symptom-Driven Analysis**: Analyzes patient symptoms, vital signs, and medical history
-- **Smart Alert System**: Reduces alert fatigue by only showing alerts for medium/high risk cases
+- **Smart Alert System**: Reduces alert fatigue through intelligent prioritization and suppression
 - **Interactive Web UI**: Built with Streamlit for easy use by non-technical users
-- **Visual Risk Assessment**: Gauge charts, probability distributions, and feature importance
-- **Clinical Recommendations**: Provides actionable recommendations based on risk level
+
+### 🆕 Enhanced Features
+
+- **🧠 Explainable AI (XAI)**: SHAP and LIME explanations that show *why* a patient is at risk
+- **🎯 Multi-Risk Prediction Engine**: Unified assessment across 4 risk types:
+  - 💊 Medication Error Risk
+  - 📈 Disease Progression Risk
+  - ⚠️ Adverse Event Risk
+  - 🏥 Hospital Readmission Risk
+- **📥 FHIR R4 Integration**: Import patient data from EHR systems via FHIR bundles
+- **🔄 Hybrid Intelligence**: Combines ML predictions with rule-based clinical safety checks
+- **📊 Visual Risk Assessment**: Radar charts, gauge charts, probability distributions, and feature importance
 
 ---
 
@@ -22,24 +33,35 @@ An intelligent web-based Clinical Decision Support System that uses Machine Lear
 ```
 cdss-risk-prediction-system/
 ├── app/
-│   ├── main.py                    # Streamlit application
+│   ├── main.py                         # Streamlit application
+│   ├── auth.py                         # Authentication system
 │   ├── components/
-│   │   ├── input_form.py          # Patient input forms
-│   │   ├── risk_display.py        # Risk visualization
-│   │   └── alert_component.py     # Alert display
+│   │   ├── input_form.py               # Patient input forms
+│   │   ├── risk_display.py             # Risk visualization
+│   │   ├── alert_component.py          # Alert display
+│   │   ├── explanation_display.py      # XAI explanation UI [NEW]
+│   │   ├── multi_risk_dashboard.py     # Multi-risk dashboard [NEW]
+│   │   └── fhir_import.py              # FHIR import UI [NEW]
+│   ├── fhir/                           # FHIR integration [NEW]
+│   │   └── fhir_converter.py           # FHIR to CDSS converter
 │   └── utils/
-│       └── validators.py          # Input validation
+│       ├── validators.py               # Input validation
+│       └── logger.py                   # Logging utilities
 ├── ml/
-│   ├── preprocessing.py           # Data preprocessing
-│   ├── feature_encoder.py         # Feature encoding
-│   ├── model.py                   # ML model training/inference
-│   └── risk_classifier.py         # Risk classification engine
+│   ├── preprocessing.py                # Data preprocessing
+│   ├── feature_encoder.py              # Feature encoding
+│   ├── model.py                        # ML model training/inference
+│   ├── risk_classifier.py              # Risk classification engine
+│   ├── explainer.py                    # XAI explanations [NEW]
+│   ├── multi_risk_engine.py            # Multi-risk predictor [NEW]
+│   ├── rules_engine.py                 # Clinical rules engine [NEW]
+│   └── alert_prioritization.py         # Smart alert system [NEW]
 ├── data/
-│   └── generate_data.py           # Sample data generator
-├── models/                        # Saved trained models
-├── tests/                         # Unit tests
-├── config.py                      # Configuration settings
-├── requirements.txt               # Dependencies
+│   └── generate_data.py                # Sample data generator
+├── models/                             # Saved trained models
+├── tests/                              # Unit tests
+├── config.py                           # Configuration settings
+├── requirements.txt                    # Dependencies
 └── README.md
 ```
 

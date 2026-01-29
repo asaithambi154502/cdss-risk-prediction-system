@@ -10,6 +10,14 @@ numpy>=1.24.0
 # Machine Learning
 scikit-learn>=1.3.0
 joblib>=1.3.0
+xgboost>=2.0.0
+
+# Explainable AI (XAI)
+shap>=0.43.0
+lime>=0.2.0.1
+
+# FHIR Healthcare Data Support
+fhir.resources>=6.5.0
 
 # Visualization
 plotly>=5.17.0

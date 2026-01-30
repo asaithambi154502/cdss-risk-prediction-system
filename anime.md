@@ -1,7 +1,0 @@
-The project includes a secure and user-friendly Login Page to ensure that only authorized users such as doctors and pharmacists can access the system. The login interface requires valid credentials before entering the main application, improving security and preventing unauthorized usage. This helps protect sensitive clinical information and increases trust in the system.
-
-The User Interface (UI) is designed with a healthcare-oriented theme using soft blue and green colors, medical icons, and well-organized sections. The interface is simple and intuitive, allowing users to easily enter patient details, vital signs, and symptoms without technical difficulty. Clear labels, structured forms, and visual risk indicators (green, yellow, red) help users quickly understand patient condition and system output.
-
-To enhance user experience, the application includes lightweight animations and visual effects such as smooth page transitions, loading indicators, and fade-in results for predictions. Animated progress bars and alert highlights provide immediate visual feedback when a risk assessment is generated. These animations make the interaction more engaging while maintaining a professional and calm healthcare appearance without causing distraction.
-
-By combining secure login, a clean healthcare-focused interface, and subtle animations, the system becomes more interactive, professional, and suitable for real-world clinical environments.

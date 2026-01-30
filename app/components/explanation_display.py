@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import XAI_CONFIG
+from cdss_config import XAI_CONFIG
 
 
 def render_explanation_section(explanation, show_chart: bool = True,

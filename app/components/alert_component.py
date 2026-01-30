@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import RISK_COLORS, ALERT_CONFIG
+from cdss_config import RISK_COLORS, ALERT_CONFIG
 
 
 def render_alert(

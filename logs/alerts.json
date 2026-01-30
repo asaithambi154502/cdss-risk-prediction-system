@@ -31,5 +31,16 @@
       "Monitor vital signs"
     ],
     "acknowledged": false
+  },
+  {
+    "timestamp": "2026-01-29T20:54:04.479873",
+    "user": "test_user",
+    "risk_level": "Medium",
+    "alert_message": "Moderate risk detected",
+    "recommendations": [
+      "Review medication",
+      "Monitor vital signs"
+    ],
+    "acknowledged": false
   }
 ]

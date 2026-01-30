@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import (
+from cdss_config import (
     DRUG_INTERACTIONS, VITAL_CRITICAL_RULES, AGE_SAFETY_RULES,
     RULES_ENGINE_CONFIG, EXISTING_CONDITIONS
 )

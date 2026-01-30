@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import MODEL_PATH, ENCODER_PATH
+from cdss_config import MODEL_PATH, ENCODER_PATH
 from ml.preprocessing import DataPreprocessor
 from ml.feature_encoder import FeatureEncoder
 

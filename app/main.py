@@ -10,12 +10,17 @@ import streamlit as st
 import sys
 from pathlib import Path
 import os
+import requests
+from streamlit_lottie import st_lottie
+import json
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from config import PAGE_CONFIG, MODEL_PATH, ENCODER_PATH, XAI_CONFIG
+
+from cdss_config import PAGE_CONFIG, MODEL_PATH, ENCODER_PATH, XAI_CONFIG, UI_STYLE
+
 from app.components.input_form import render_complete_form
 from app.components.risk_display import (
     render_risk_summary, 
@@ -43,6 +48,90 @@ from ml.multi_risk_engine import MultiRiskEngine
 from ml.rules_engine import ClinicalRulesEngine, HybridDecisionEngine
 from ml.alert_prioritization import SmartAlertEngine
 from app.fhir.fhir_converter import FHIRConverter
+from app.components.analytics_dashboard import render_analytics_dashboard
+
+
+def load_lottieurl(url: str):
+    """Load Lottie animation from URL."""
+    try:
+        r = requests.get(url)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except:
+        return None
+
+
+def load_lottiefile(filepath: str):
+    """Load Lottie animation from local JSON file."""
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        st.error(f"Error loading local Lottie file: {e}")
+        return None
+
+
+def set_professional_style():
+    """Inject global professional CSS styles."""
+    st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+    /* Global Typography */
+    html, body, [class*="css"] {{
+        font-family: {UI_STYLE['primary_font']};
+        color: {UI_STYLE['text_primary']} !important;
+    }}
+    
+    .main {{
+        background: {UI_STYLE['background_gradient']};
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+    }}
+
+    @keyframes gradientBG {{
+        0% {{ background-position: 0% 50%; }}
+        50% {{ background-position: 100% 50%; }}
+        100% {{ background-position: 0% 50%; }}
+    }}
+
+    /* Global Glassmorphism Class */
+    .glass-card {{
+        background: {UI_STYLE['glass_bg']};
+        backdrop-filter: {UI_STYLE['glass_blur']};
+        -webkit-backdrop-filter: {UI_STYLE['glass_blur']};
+        border-radius: 16px;
+        border: {UI_STYLE['glass_border']};
+        box-shadow: {UI_STYLE['card_shadow']};
+        padding: 25px;
+        margin-bottom: 20px;
+    }}
+
+    /* Premium Typography Overrides */
+    h1, h2, h3 {{
+        font-family: {UI_STYLE['primary_font']} !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.02em !important;
+    }}
+
+    /* Premium Scrollbar */
+    ::-webkit-scrollbar {{
+        width: 8px;
+    }}
+    ::-webkit-scrollbar-track {{
+        background: rgba(0, 0, 0, 0.1);
+    }}
+    ::-webkit-scrollbar-thumb {{
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+    }}
+    ::-webkit-scrollbar-thumb:hover {{
+        background: rgba(255, 255, 255, 0.3);
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
 
 
 def load_model():
@@ -71,9 +160,34 @@ def load_model():
 def render_sidebar():
     """Render the sidebar with app info and settings."""
     with st.sidebar:
-        st.image("https://img.icons8.com/color/96/000000/hospital-2.png", width=80)
+        # Animated Logo
+        st.markdown("""
+        <div style="text-align: center;">
+            <img src="https://img.icons8.com/color/96/000000/hospital-2.png" 
+                 class="floating-icon" 
+                 style="width: 80px; margin-bottom: 10px;">
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.title("CDSS")
-        st.caption("Clinical Decision Support System")
+        
+        # Animated Heartbeat Line
+        st.markdown("""
+        <svg width="100%" height="40" viewBox="0 0 300 40">
+            <path class="heartbeat-line" 
+                  d="M0,20 L30,20 L40,10 L50,30 L60,20 L300,20" 
+                  fill="none" 
+                  stroke="#dc3545" 
+                  stroke-width="3" 
+                  stroke-linecap="round"/>
+        </svg>
+        """, unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div style="font-family: {UI_STYLE['primary_font']}; text-align: center; color: {UI_STYLE['text_muted']}; font-size: 0.9rem;">
+            Clinical Decision Support System
+        </div>
+        """, unsafe_allow_html=True)
         
         st.divider()
         
@@ -113,8 +227,12 @@ def render_sidebar():
         
         st.divider()
         
-        st.caption("© 2024 CDSS Risk Prediction System")
-        st.caption("For educational purposes only")
+        st.markdown(f"""
+        <div style="text-align: center; color: {UI_STYLE['text_muted']}; font-size: 0.8rem; margin-top: 2rem;">
+            © 2024 CDSS Risk Prediction System<br>
+            For educational purposes only
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def render_patient_summary(summary: dict):
@@ -259,6 +377,45 @@ def main():
         28% { transform: scale(1); }
         42% { transform: scale(1.1); }
         70% { transform: scale(1); }
+    }
+
+    /* NEW: Floating animation for medical icons */
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+    
+    /* NEW: SVG Line Drawing Animation */
+    @keyframes dash {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+    
+    .floating-icon {
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    .heartbeat-line {
+        stroke-dasharray: 1000;
+        stroke-dashoffset: 1000;
+        animation: dash 3s linear infinite;
+    }
+    
+    /* NEW: Custom Medical Spinner */
+    .stSpinner > div {
+        border-top-color: #0077b6 !important;
+        border-right-color: #48cae4 !important;
+        border-bottom-color: #0077b6 !important;
+        border-left-color: #48cae4 !important;
+        border-width: 4px !important;
+        animation: spin 1s linear infinite, glow 2s ease-in-out infinite !important;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
     
     /* ========================================
@@ -569,6 +726,9 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
+    # Set professional style tokens
+    set_professional_style()
+    
     # Check authentication
     if not is_authenticated():
         render_login_page()
@@ -581,14 +741,68 @@ def main():
     user = get_current_user()
     
     # Main content header
-    st.title("🏥 Medical Risk Prediction System")
+    # Main content header with Lottie Animation
     
-    # Welcome message
+    # Load animation - Specific Doctor Orientation (User Provided Local File)
+    lottie_path = project_root / "app" / "assets" / "doctor_animation.json"
+    lottie_medical = load_lottiefile(str(lottie_path))
+    
+    # Fallback to URL if local file fails
+    if lottie_medical is None:
+        lottie_medical = load_lottieurl("https://lottie.host/6ad43886-0683-4700-9833-281b37c0f164/5WpB97ZRE2.json") 
+    
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&display=swap');
+
+    .title-text {
+        font-family: 'Poppins', sans-serif;
+        font-size: 42px;
+        font-weight: 600;
+        color: #0D47A1;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .subtitle-text {
+        font-family: 'Poppins', sans-serif;
+        font-size: 16px;
+        color: #455A64;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .header-box {
+        background: linear-gradient(135deg, #E3F2FD, #E8F5E9);
+        padding: 20px;
+        border-radius: 20px;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.05);
+        animation: fadeIn 1.5s ease-in;
+        margin-bottom: 30px;
+        border: 1px solid #BBDEFB;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<div class='glass-card' style='margin-bottom: 30px; border-left: 5px solid #60a5fa;'>", unsafe_allow_html=True)
+    
+    if lottie_medical:
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            st_lottie(lottie_medical, height=180, key="medical_header")
+    else:
+         st.markdown('<div style="text-align: center; font-size: 80px;">🏥</div>', unsafe_allow_html=True)
+            
+    st.markdown("<div class='title-text'>Clinical Decision Support System</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtitle-text'>AI-Based Medical Risk Prediction Platform</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Welcome message (Styled)
     st.markdown(f"""
-    <p style="font-size: 1.1rem; color: #666;">
+    <div style="text-align: center; color: #555; margin-bottom: 20px;">
     Welcome, <strong>{user.name}</strong>! Enter patient information below to receive an AI-powered 
-    risk assessment with intelligent alerts for potential medical errors.
-    </p>
+    risk assessment.
+    </div>
     """, unsafe_allow_html=True)
     
     st.divider()
@@ -599,6 +813,7 @@ def main():
             "🏥 Risk Assessment", 
             "🎯 Multi-Risk Dashboard",
             "📥 FHIR Import",
+            "📈 Analytics",
             "📊 System Logs"
         ])
         
@@ -612,6 +827,9 @@ def main():
             render_fhir_import_view()
         
         with tabs[3]:
+            render_analytics_dashboard()
+        
+        with tabs[4]:
             render_log_viewer()
     else:
         tabs = st.tabs([
@@ -645,7 +863,7 @@ def render_risk_assessment_view(user):
         st.header("📝 Patient Information")
         
         # Privacy reminder
-        st.info("🔒 Patient data is processed in-session only and is not stored.")
+        st.info("🔒 Prediction results are stored anonymously for system analytics. No patient identifiers are saved.")
         
         # Render input form
         patient_data = render_complete_form()

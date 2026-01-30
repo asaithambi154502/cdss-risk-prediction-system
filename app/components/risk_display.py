@@ -6,6 +6,7 @@ gauges, and probability charts.
 """
 
 import streamlit as st
+import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from typing import Dict, Optional
@@ -13,7 +14,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import RISK_COLORS
+from cdss_config import RISK_COLORS, UI_STYLE
 
 
 def render_risk_gauge(risk_score: float, risk_label: str) -> None:
@@ -202,24 +203,29 @@ def render_risk_summary(assessment_summary: Dict) -> None:
     Args:
         assessment_summary: Dictionary from RiskClassifier.get_risk_summary()
     """
-    col1, col2 = st.columns([1, 1])
+    st.markdown(f"<h3 style='font-family: {UI_STYLE['primary_font']}; margin-top: 1.5rem;'>📊 Prediction Analytics</h3>", unsafe_allow_html=True)
     
-    with col1:
-        render_risk_badge(
-            assessment_summary['risk_level'],
-            assessment_summary['confidence'] / 100
-        )
+    with st.container():
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+        col1, col2 = st.columns([1, 1])
         
-    with col2:
-        render_risk_gauge(
-            assessment_summary['risk_score'],
-            assessment_summary['risk_level']
+        with col1:
+            render_risk_badge(
+                assessment_summary['risk_level'],
+                assessment_summary['confidence'] / 100
+            )
+            
+        with col2:
+            render_risk_gauge(
+                assessment_summary['risk_score'],
+                assessment_summary['risk_level']
+            )
+        
+        # Probability distribution
+        render_probability_chart(
+            {k: v/100 for k, v in assessment_summary['probabilities'].items()}
         )
-    
-    # Probability distribution
-    render_probability_chart(
-        {k: v/100 for k, v in assessment_summary['probabilities'].items()}
-    )
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_recommendations(recommendations: list) -> None:

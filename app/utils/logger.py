@@ -6,15 +6,29 @@ Provides prediction and alert logging for quality improvement and audit trails.
 
 import json
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 import threading
 
+# Ensure project root is in path
+project_root = Path(__file__).parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 # Get the logs directory path
-LOGS_DIR = Path(__file__).parent.parent.parent / "logs"
+LOGS_DIR = project_root / "logs"
+
+# Import database functions
+try:
+    from app.database.db import save_prediction as db_save_prediction
+    from app.database.db import save_alert as db_save_alert
+    DB_AVAILABLE = True
+except ImportError as e:
+    print(f"Database module not available: {e}")
+    DB_AVAILABLE = False
 
 
 @dataclass
@@ -116,6 +130,7 @@ class CDSSLogger:
         Log a prediction event.
         
         Note: No patient identifiers are stored - only clinical data.
+        Saves to both SQLite database and JSON file for redundancy.
         """
         log_entry = PredictionLog(
             timestamp=datetime.now().isoformat(),
@@ -136,6 +151,25 @@ class CDSSLogger:
             condition_count=condition_count
         )
         
+        # Save to SQLite database
+        if DB_AVAILABLE:
+            try:
+                db_save_prediction(
+                    user=user,
+                    user_role=user_role,
+                    risk_level=risk_level,
+                    risk_probability=risk_probability,
+                    alert_generated=alert_generated,
+                    alert_type=alert_type,
+                    vital_signs=vital_signs,
+                    symptom_count=symptom_count,
+                    condition_count=condition_count
+                )
+            except Exception as e:
+                # Log error but don't fail - fallback to JSON
+                print(f"Database save failed: {e}")
+        
+        # Also save to JSON file (backup)
         logs = self._read_logs(self.predictions_file)
         logs.append(log_entry.to_dict())
         
@@ -152,7 +186,7 @@ class CDSSLogger:
         alert_message: str,
         recommendations: List[str]
     ) -> None:
-        """Log an alert event."""
+        """Log an alert event. Saves to both SQLite database and JSON file."""
         log_entry = AlertLog(
             timestamp=datetime.now().isoformat(),
             user=user,
@@ -161,6 +195,20 @@ class CDSSLogger:
             recommendations=recommendations
         )
         
+        # Save to SQLite database
+        if DB_AVAILABLE:
+            try:
+                db_save_alert(
+                    user=user,
+                    risk_level=risk_level,
+                    alert_message=alert_message,
+                    recommendations=recommendations
+                )
+            except Exception as e:
+                # Log error but don't fail - fallback to JSON
+                print(f"Database alert save failed: {e}")
+        
+        # Also save to JSON file (backup)
         logs = self._read_logs(self.alerts_file)
         logs.append(log_entry.to_dict())
         

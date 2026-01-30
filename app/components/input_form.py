@@ -10,10 +10,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import (
+from cdss_config import (
     SYMPTOMS_LIST, VITAL_SIGNS, EXISTING_CONDITIONS,
-    EXTENDED_VITAL_SIGNS, PAIN_SCORE_LABELS, GCS_INTERPRETATION
+    EXTENDED_VITAL_SIGNS, PAIN_SCORE_LABELS, GCS_INTERPRETATION, UI_STYLE
 )
+
+
+
 
 
 def render_patient_demographics() -> Dict:
@@ -45,8 +48,12 @@ def render_patient_demographics() -> Dict:
 
 def render_symptoms_form() -> Dict:
     """Render symptoms checklist form."""
-    st.subheader("🩺 Symptoms")
-    st.caption("Select all symptoms the patient is currently experiencing")
+    st.markdown(f"""
+        <h2 style='color: #60a5fa; font-family: {UI_STYLE['primary_font']};'>🩺 Clinical Data Input</h2>
+        <p style='color: {UI_STYLE['text_muted']}; font-size: 1.1rem; margin-bottom: 2rem;'>
+            Please provide comprehensive patient data for high-accuracy clinical risk prediction.
+        </p>
+    """, unsafe_allow_html=True)
     
     symptoms = {}
     

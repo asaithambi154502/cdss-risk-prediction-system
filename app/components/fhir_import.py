@@ -12,7 +12,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import FHIR_CONFIG
+from cdss_config import FHIR_CONFIG
 
 
 def render_fhir_import_section(on_import_callback):

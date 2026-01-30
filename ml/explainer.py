@@ -29,7 +29,7 @@ except ImportError:
     LIME_AVAILABLE = False
     print("Warning: LIME not available. Install with: pip install lime")
 
-from config import XAI_CONFIG, FEATURE_DISPLAY_NAMES
+from cdss_config import XAI_CONFIG, FEATURE_DISPLAY_NAMES
 
 
 @dataclass

@@ -13,7 +13,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import SYMPTOMS_LIST, VITAL_SIGNS, EXISTING_CONDITIONS
+from cdss_config import SYMPTOMS_LIST, VITAL_SIGNS, EXISTING_CONDITIONS
 
 
 class FeatureEncoder:

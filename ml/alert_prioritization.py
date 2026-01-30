@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import ALERT_PRIORITY_CONFIG
+from cdss_config import ALERT_PRIORITY_CONFIG
 
 
 class AlertPriority(Enum):

@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config import SYMPTOMS_LIST, VITAL_SIGNS, EXISTING_CONDITIONS
+from cdss_config import SYMPTOMS_LIST, VITAL_SIGNS, EXISTING_CONDITIONS
 
 
 def validate_age(age: int) -> Tuple[bool, str]:

@@ -8,6 +8,20 @@ BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 MODELS_DIR = BASE_DIR / "models"
 
+# Professional UI Style Tokens
+UI_STYLE = {
+    "primary_font": "'Poppins', sans-serif",
+    "secondary_font": "'Inter', sans-serif",
+    "background_gradient": "linear-gradient(-45deg, #1e3a8a, #3b82f6, #0f172a, #1d4ed8)",
+    "glass_bg": "rgba(255, 255, 255, 0.08)",
+    "glass_border": "1px solid rgba(255, 255, 255, 0.12)",
+    "glass_blur": "blur(20px)",
+    "card_shadow": "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+    "accent_color": "#60a5fa",
+    "text_primary": "#f8fafc",
+    "text_muted": "#94a3b8"
+}
+
 # Model configuration
 MODEL_PATH = MODELS_DIR / "trained_model.joblib"
 ENCODER_PATH = MODELS_DIR / "feature_encoder.joblib"
@@ -26,11 +40,11 @@ RISK_LEVELS = {
     2: "High"
 }
 
-# Risk colors for UI
+# Risk colors for UI - Professional Palette
 RISK_COLORS = {
-    "Low": "#28a745",      # Green
-    "Medium": "#ffc107",   # Yellow/Amber
-    "High": "#dc3545"      # Red
+    "Low": "#00C853",      # Material Emerald Green
+    "Medium": "#FFD600",   # Material Gold
+    "High": "#FF1744"      # Material Vivid Red
 }
 
 # Symptoms list for input form
@@ -60,8 +74,6 @@ VITAL_SIGNS = {
 }
 
 # Extended vital signs with validation ranges
-# Each vital has: input_min/max (allowed input), normal_min/max (healthy range), 
-# warning thresholds, and critical thresholds
 EXTENDED_VITAL_SIGNS = {
     "blood_sugar": {
         "label": "Blood Sugar (Fasting)",
@@ -200,10 +212,7 @@ PAGE_CONFIG = {
     "initial_sidebar_state": "expanded"
 }
 
-# ============================================================================
 # EXPLAINABLE AI (XAI) CONFIGURATION
-# ============================================================================
-
 XAI_CONFIG = {
     "default_method": "shap",          # Options: "shap", "lime", "both"
     "top_features_count": 5,           # Number of top contributing factors to show
@@ -236,44 +245,33 @@ FEATURE_DISPLAY_NAMES = {
     "consciousness_gcs": "Glasgow Coma Scale",
 }
 
-# ============================================================================
 # SMART ALERT FATIGUE REDUCTION CONFIGURATION
-# ============================================================================
-
 ALERT_PRIORITY_CONFIG = {
-    # Alert priority levels
     "levels": {
         "CRITICAL": {"color": "#dc3545", "icon": "🚨", "display_time": None, "sound": True},
         "HIGH": {"color": "#fd7e14", "icon": "⚠️", "display_time": 30, "sound": False},
         "MEDIUM": {"color": "#ffc107", "icon": "📋", "display_time": 15, "sound": False},
         "LOW": {"color": "#17a2b8", "icon": "ℹ️", "display_time": 5, "sound": False},
     },
-    # Suppression rules
     "suppression": {
-        "min_interval_minutes": 15,        # Minimum time between similar alerts
-        "max_low_alerts_per_hour": 5,      # Max low-priority alerts per hour
-        "suppress_repeated_low": True,      # Suppress repeated low-risk alerts
-        "consecutive_threshold": 3,         # After N same alerts, reduce priority
+        "min_interval_minutes": 15,
+        "max_low_alerts_per_hour": 5,
+        "suppress_repeated_low": True,
+        "consecutive_threshold": 3,
     },
-    # Fatigue tracking
     "fatigue_tracking": {
-        "alert_history_size": 100,         # Number of alerts to keep in history
-        "fatigue_threshold": 20,           # Alerts per hour that indicates fatigue
-        "auto_adjust_priority": True,      # Auto-adjust priorities based on fatigue
+        "alert_history_size": 100,
+        "fatigue_threshold": 20,
+        "auto_adjust_priority": True,
     }
 }
 
-# ============================================================================
 # FHIR ELECTRONIC HEALTH RECORD (EHR) CONFIGURATION
-# ============================================================================
-
 FHIR_CONFIG = {
     "version": "R4",                       # FHIR version (R4 is most common)
     "base_url": None,                      # FHIR server URL (None = file-based only)
     "enable_server_mode": False,           # Enable FHIR server connectivity
     "sample_data_dir": BASE_DIR / "app" / "fhir" / "sample_bundles",
-    
-    # Resource mappings
     "supported_resources": [
         "Patient",
         "Observation",
@@ -282,7 +280,6 @@ FHIR_CONFIG = {
         "AllergyIntolerance",
         "Encounter"
     ],
-    
     # Observation code mappings (LOINC codes)
     "observation_codes": {
         "heart_rate": "8867-4",
@@ -295,12 +292,8 @@ FHIR_CONFIG = {
     },
 }
 
-# ============================================================================
 # UNIFIED MULTI-RISK PREDICTION ENGINE CONFIGURATION
-# ============================================================================
-
 MULTI_RISK_CONFIG = {
-    # Risk types and their weights for overall score
     "risk_types": {
         "medication_error": {
             "enabled": True,
@@ -331,8 +324,6 @@ MULTI_RISK_CONFIG = {
             "color": "#3498db"
         },
     },
-    
-    # Aggregation method for overall risk
     "aggregation_method": "weighted_max",  # Options: "weighted_avg", "weighted_max", "highest"
     
     # Thresholds for each risk type (can be customized per risk)
@@ -343,10 +334,7 @@ MULTI_RISK_CONFIG = {
     }
 }
 
-# ============================================================================
 # HYBRID INTELLIGENCE - CLINICAL RULES ENGINE CONFIGURATION
-# ============================================================================
-
 RULES_ENGINE_CONFIG = {
     "enable_rules": True,
     "rules_override_ml": False,           # If True, rules can override ML predictions
@@ -421,4 +409,3 @@ MEDICATION_LIST = [
     "alprazolam", "lorazepam", "zolpidem", "trazodone", "quetiapine",
     "insulin", "glipizide", "sitagliptin", "empagliflozin", "liraglutide"
 ]
-

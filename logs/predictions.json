@@ -52,5 +52,23 @@
     },
     "symptom_count": 3,
     "condition_count": 1
+  },
+  {
+    "timestamp": "2026-01-29T20:54:04.458994",
+    "user": "test_user",
+    "user_role": "doctor",
+    "risk_level": "Medium",
+    "risk_probability": 0.45,
+    "alert_generated": true,
+    "alert_type": "Medium",
+    "vital_signs_summary": {
+      "heart_rate": 85,
+      "temperature": 37.5,
+      "blood_pressure": "130/85",
+      "oxygen_saturation": 96,
+      "respiratory_rate": 18
+    },
+    "symptom_count": 3,
+    "condition_count": 1
   }
 ]

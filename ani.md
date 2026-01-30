@@ -1,5 +1,0 @@
-The project is designed with a modern, health-oriented user interface that enhances usability, clarity, and user confidence. A clean visual theme using soft blue and green colors, medical icons, and well-structured layouts creates a calm and professional environment suitable for clinical use. The interface is optimized for readability and quick interaction, ensuring that healthcare professionals can enter patient data and view results efficiently.
-
-Subtle animations and transitions are incorporated to improve user experience without causing distraction. Smooth loading indicators, gentle fade-in effects for results, and animated visual cues for risk levels (green for safe, yellow for caution, and red for high risk) help users quickly understand the system’s output. These animations provide immediate visual feedback and make interactions more intuitive while maintaining a serious and professional healthcare tone.
-
-By combining a healthcare-focused design with lightweight animations, the system becomes more engaging, trustworthy, and user-friendly, encouraging consistent use while supporting accurate and stress-free clinical decision-making.

@@ -1,5 +1,0 @@
-The project is enhanced with a local SQLite database to securely store patient input data and prediction results for system logging and analytics purposes. Instead of processing information only during the session, the system now saves essential clinical details such as timestamp, vital signs, selected medical history, and predicted risk level (Low, Medium, or High) into a structured database.
-
-The SQLite database ensures that all records are stored in a lightweight, reliable, and persistent format without requiring an external server. To maintain privacy and confidentiality, no personal identifiers such as patient name or contact details are stored. The data is saved only in anonymized form and is used exclusively for system monitoring, performance evaluation, and analytical reporting.
-
-By using SQLite, the system can generate historical logs, calculate statistics such as total predictions and alert rates, and display system analytics through the dashboard. This enhancement improves reliability, traceability, and real-world usability of the Clinical Decision Support System while maintaining ethical data handling practices.

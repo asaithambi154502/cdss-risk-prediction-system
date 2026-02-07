@@ -20,7 +20,9 @@ from app.database.db import (
     get_predictions,
     get_alerts,
     get_prediction_trends,
-    export_predictions_csv
+    export_predictions_csv,
+    export_predictions_excel,
+    get_total_records
 )
 
 
@@ -298,14 +300,14 @@ def render_recent_predictions() -> None:
         }.get(pred.get('risk_level', ''), '⚪')
         
         display_data.append({
-            'Time': pred.get('timestamp', '')[:19],
-            'User': pred.get('user', ''),
+            'Patient ID': pred.get('patient_id', '-') or '-',
+            'Doctor ID': pred.get('doctor_id', '-') or '-',
+            'Time': pred.get('timestamp', '')[:19] if pred.get('timestamp') else '-',
             'Risk': f"{risk_color} {pred.get('risk_level', '')}",
             'Confidence': f"{pred.get('risk_probability', 0):.1%}" if pred.get('risk_probability') else 'N/A',
             'HR': pred.get('heart_rate', '-'),
             'BP': f"{pred.get('blood_pressure_systolic', '-')}/{pred.get('blood_pressure_diastolic', '-')}",
             'SpO2': f"{pred.get('oxygen_saturation', '-')}%",
-            'Symptoms': pred.get('symptom_count', 0),
             'Alert': '🔔' if pred.get('alert_generated') else '-'
         })
     
@@ -320,26 +322,42 @@ def render_export_section() -> None:
     """Render the data export section."""
     st.subheader("📥 Export Data")
     
-    col1, col2, col3 = st.columns([1, 1, 1])
+    # Show total records count
+    total_records = get_total_records()
+    st.markdown(f"**Total Records in Database:** {total_records}")
+    
+    col1, col2 = st.columns(2)
     
     with col1:
+        # Excel Export Button
+        excel_data = export_predictions_excel()
+        if excel_data:
+            st.download_button(
+                label="📊 Download All Records (Excel)",
+                data=excel_data,
+                file_name="patient_records.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                type="primary"
+            )
+        else:
+            st.info("No records to export yet.")
+    
+    with col2:
+        # CSV Export with date range
         start_date = st.date_input(
             "Start Date",
             value=datetime.now() - timedelta(days=30),
             key="analytics_export_start"
         )
-    
-    with col2:
+        
         end_date = st.date_input(
             "End Date",
             value=datetime.now(),
             key="analytics_export_end"
         )
-    
-    with col3:
-        st.write("")  # Spacer
-        st.write("")
-        if st.button("📄 Export to CSV", type="primary", use_container_width=True):
+        
+        if st.button("📄 Export Date Range (CSV)", use_container_width=True):
             try:
                 csv_data = export_predictions_csv(
                     start_date=start_date.isoformat(),
@@ -364,8 +382,8 @@ def render_export_section() -> None:
     <div style="background: #e3f2fd; padding: 1rem; border-radius: 8px; 
                 border: 1px solid #90caf9; margin-top: 1rem;">
         <p style="color: #1565c0; margin: 0; font-size: 0.85rem;">
-            🔒 <strong>Privacy Notice:</strong> Exported data contains only anonymized 
-            clinical information. No patient identifiers are included.
+            🔒 <strong>Privacy Notice:</strong> Exported data includes Patient ID and Doctor ID 
+            for tracking purposes. All clinical data is stored securely.
         </p>
     </div>
     """, unsafe_allow_html=True)

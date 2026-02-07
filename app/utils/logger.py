@@ -154,6 +154,8 @@ class CDSSLogger:
         # Save to SQLite database
         if DB_AVAILABLE:
             try:
+                print(f"[DEBUG] Attempting to save prediction to database...")
+                print(f"[DEBUG] patient_id: {vital_signs.get('patient_id', '')}, doctor_id: {vital_signs.get('doctor_id', '')}")
                 db_save_prediction(
                     user=user,
                     user_role=user_role,
@@ -163,11 +165,18 @@ class CDSSLogger:
                     alert_type=alert_type,
                     vital_signs=vital_signs,
                     symptom_count=symptom_count,
-                    condition_count=condition_count
+                    condition_count=condition_count,
+                    patient_id=vital_signs.get('patient_id', ''),
+                    doctor_id=vital_signs.get('doctor_id', '')
                 )
+                print(f"[DEBUG] Database save SUCCESSFUL!")
             except Exception as e:
                 # Log error but don't fail - fallback to JSON
-                print(f"Database save failed: {e}")
+                print(f"[DEBUG] Database save FAILED: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print(f"[DEBUG] DB_AVAILABLE is False, skipping database save")
         
         # Also save to JSON file (backup)
         logs = self._read_logs(self.predictions_file)

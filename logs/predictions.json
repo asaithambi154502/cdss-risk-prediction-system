@@ -70,5 +70,59 @@
     },
     "symptom_count": 3,
     "condition_count": 1
+  },
+  {
+    "timestamp": "2026-02-07T12:52:20.228204",
+    "user": "admin",
+    "user_role": "admin",
+    "risk_level": "Low",
+    "risk_probability": 0.9626,
+    "alert_generated": false,
+    "alert_type": null,
+    "vital_signs_summary": {
+      "heart_rate": 75,
+      "temperature": 37.0,
+      "blood_pressure": "120/80",
+      "oxygen_saturation": 98,
+      "respiratory_rate": 16
+    },
+    "symptom_count": 1,
+    "condition_count": 0
+  },
+  {
+    "timestamp": "2026-02-07T13:04:49.568629",
+    "user": "admin",
+    "user_role": "admin",
+    "risk_level": "Low",
+    "risk_probability": 0.8894,
+    "alert_generated": false,
+    "alert_type": null,
+    "vital_signs_summary": {
+      "heart_rate": 75,
+      "temperature": 37.0,
+      "blood_pressure": "120/80",
+      "oxygen_saturation": 98,
+      "respiratory_rate": 16
+    },
+    "symptom_count": 0,
+    "condition_count": 1
+  },
+  {
+    "timestamp": "2026-02-07T13:05:20.907421",
+    "user": "admin",
+    "user_role": "admin",
+    "risk_level": "High",
+    "risk_probability": 0.9985,
+    "alert_generated": true,
+    "alert_type": "High",
+    "vital_signs_summary": {
+      "heart_rate": 75,
+      "temperature": 37.0,
+      "blood_pressure": "120/80",
+      "oxygen_saturation": 98,
+      "respiratory_rate": 16
+    },
+    "symptom_count": 8,
+    "condition_count": 4
   }
 ]

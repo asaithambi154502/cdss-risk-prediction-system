@@ -1,43 +1,66 @@
 """
-SQLite Database Module for CDSS
+Database Module for CDSS
 
+Supports PostgreSQL (for Render deployment) and SQLite (for local development).
 Provides persistent storage for prediction results, alerts, and analytics.
-No personal identifiers are stored - data is anonymized for system monitoring.
 """
 
-import sqlite3
+import os
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 from contextlib import contextmanager
 import threading
 
-# Database file location
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "cdss.db"
+# Check for DATABASE_URL environment variable (PostgreSQL on Render)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# Determine database type
+USE_POSTGRES = DATABASE_URL is not None and DATABASE_URL.startswith('postgres')
+
+if USE_POSTGRES:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    # Fix for Render's postgres:// vs postgresql://
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+else:
+    import sqlite3
+    # SQLite database file location
+    DB_PATH = Path(__file__).parent.parent.parent / "data" / "cdss.db"
 
 # Thread-local storage for connections
 _local = threading.local()
 
 
-def get_connection() -> sqlite3.Connection:
+def get_connection():
     """
     Get a database connection (thread-safe).
     
     Returns:
-        sqlite3.Connection: Database connection
+        Database connection (PostgreSQL or SQLite)
     """
-    if not hasattr(_local, 'connection') or _local.connection is None:
-        _local.connection = sqlite3.connect(str(DB_PATH), check_same_thread=False)
-        _local.connection.row_factory = sqlite3.Row
-    return _local.connection
+    if USE_POSTGRES:
+        if not hasattr(_local, 'connection') or _local.connection is None or _local.connection.closed:
+            _local.connection = psycopg2.connect(DATABASE_URL)
+        return _local.connection
+    else:
+        if not hasattr(_local, 'connection') or _local.connection is None:
+            DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+            _local.connection = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+            _local.connection.row_factory = sqlite3.Row
+        return _local.connection
 
 
 @contextmanager
 def get_db_cursor():
     """Context manager for database operations."""
     conn = get_connection()
-    cursor = conn.cursor()
+    if USE_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
     try:
         yield cursor
         conn.commit()
@@ -49,71 +72,149 @@ def get_db_cursor():
 def init_db() -> None:
     """
     Initialize the database with required tables.
-    Creates the database file and tables if they don't exist.
+    Creates tables if they don't exist.
     """
-    # Ensure data directory exists
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = get_connection()
     
-    conn = sqlite3.connect(str(DB_PATH))
-    cursor = conn.cursor()
-    
-    # Create predictions table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS predictions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            user TEXT NOT NULL,
-            user_role TEXT,
-            risk_level TEXT NOT NULL,
-            risk_probability REAL,
-            alert_generated INTEGER DEFAULT 0,
-            alert_type TEXT,
-            heart_rate INTEGER,
-            blood_pressure_systolic INTEGER,
-            blood_pressure_diastolic INTEGER,
-            temperature REAL,
-            oxygen_saturation INTEGER,
-            respiratory_rate INTEGER,
-            symptom_count INTEGER DEFAULT 0,
-            condition_count INTEGER DEFAULT 0,
-            symptoms TEXT,
-            conditions TEXT
-        )
-    ''')
-    
-    # Create alerts table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS alerts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            prediction_id INTEGER,
-            user TEXT NOT NULL,
-            risk_level TEXT NOT NULL,
-            alert_message TEXT,
-            recommendations TEXT,
-            acknowledged INTEGER DEFAULT 0,
-            acknowledged_at DATETIME,
-            acknowledged_by TEXT,
-            FOREIGN KEY (prediction_id) REFERENCES predictions(id)
-        )
-    ''')
-    
-    # Create indexes for faster queries
-    cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_predictions_timestamp 
-        ON predictions(timestamp)
-    ''')
-    cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_predictions_risk_level 
-        ON predictions(risk_level)
-    ''')
-    cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_alerts_timestamp 
-        ON alerts(timestamp)
-    ''')
+    if USE_POSTGRES:
+        cursor = conn.cursor()
+        
+        # Create predictions table (PostgreSQL)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS predictions (
+                id SERIAL PRIMARY KEY,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                patient_id VARCHAR(100),
+                doctor_id VARCHAR(100),
+                user_name VARCHAR(100) NOT NULL,
+                user_role VARCHAR(50),
+                risk_level VARCHAR(20) NOT NULL,
+                risk_probability REAL,
+                alert_generated INTEGER DEFAULT 0,
+                alert_type VARCHAR(50),
+                heart_rate INTEGER,
+                blood_pressure_systolic INTEGER,
+                blood_pressure_diastolic INTEGER,
+                temperature REAL,
+                oxygen_saturation INTEGER,
+                respiratory_rate INTEGER,
+                blood_sugar REAL,
+                pain_score INTEGER,
+                consciousness_gcs INTEGER,
+                bmi REAL,
+                symptom_count INTEGER DEFAULT 0,
+                condition_count INTEGER DEFAULT 0,
+                symptoms TEXT,
+                conditions TEXT
+            )
+        ''')
+        
+        # Create alerts table (PostgreSQL)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS alerts (
+                id SERIAL PRIMARY KEY,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                prediction_id INTEGER,
+                user_name VARCHAR(100) NOT NULL,
+                risk_level VARCHAR(20) NOT NULL,
+                alert_message TEXT,
+                recommendations TEXT,
+                acknowledged INTEGER DEFAULT 0,
+                acknowledged_at TIMESTAMP,
+                acknowledged_by VARCHAR(100),
+                FOREIGN KEY (prediction_id) REFERENCES predictions(id)
+            )
+        ''')
+        
+        # Create indexes
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_predictions_timestamp 
+            ON predictions(timestamp)
+        ''')
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_predictions_patient_id 
+            ON predictions(patient_id)
+        ''')
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_predictions_doctor_id 
+            ON predictions(doctor_id)
+        ''')
+        
+    else:
+        cursor = conn.cursor()
+        
+        # Create predictions table (SQLite)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                patient_id TEXT,
+                doctor_id TEXT,
+                user_name TEXT NOT NULL,
+                user_role TEXT,
+                risk_level TEXT NOT NULL,
+                risk_probability REAL,
+                alert_generated INTEGER DEFAULT 0,
+                alert_type TEXT,
+                heart_rate INTEGER,
+                blood_pressure_systolic INTEGER,
+                blood_pressure_diastolic INTEGER,
+                temperature REAL,
+                oxygen_saturation INTEGER,
+                respiratory_rate INTEGER,
+                blood_sugar REAL,
+                pain_score INTEGER,
+                consciousness_gcs INTEGER,
+                bmi REAL,
+                symptom_count INTEGER DEFAULT 0,
+                condition_count INTEGER DEFAULT 0,
+                symptoms TEXT,
+                conditions TEXT
+            )
+        ''')
+        
+        # Create alerts table (SQLite)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                prediction_id INTEGER,
+                user_name TEXT NOT NULL,
+                risk_level TEXT NOT NULL,
+                alert_message TEXT,
+                recommendations TEXT,
+                acknowledged INTEGER DEFAULT 0,
+                acknowledged_at DATETIME,
+                acknowledged_by TEXT,
+                FOREIGN KEY (prediction_id) REFERENCES predictions(id)
+            )
+        ''')
+        
+        # Create indexes
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_predictions_timestamp 
+            ON predictions(timestamp)
+        ''')
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_predictions_patient_id 
+            ON predictions(patient_id)
+        ''')
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_predictions_doctor_id 
+            ON predictions(doctor_id)
+        ''')
+        
+        # Migration: Add missing columns to existing databases
+        try:
+            cursor.execute('ALTER TABLE predictions ADD COLUMN patient_id TEXT')
+        except:
+            pass  # Column already exists
+        try:
+            cursor.execute('ALTER TABLE predictions ADD COLUMN doctor_id TEXT')
+        except:
+            pass  # Column already exists
     
     conn.commit()
-    conn.close()
 
 
 def save_prediction(
@@ -127,7 +228,9 @@ def save_prediction(
     symptom_count: int,
     condition_count: int,
     symptoms: Optional[List[str]] = None,
-    conditions: Optional[List[str]] = None
+    conditions: Optional[List[str]] = None,
+    patient_id: Optional[str] = None,
+    doctor_id: Optional[str] = None
 ) -> int:
     """
     Save a prediction record to the database.
@@ -142,40 +245,86 @@ def save_prediction(
         vital_signs: Dictionary of vital signs
         symptom_count: Number of symptoms
         condition_count: Number of conditions
-        symptoms: List of symptom names (stored as JSON)
-        conditions: List of condition names (stored as JSON)
+        symptoms: List of symptom names
+        conditions: List of condition names
+        patient_id: Patient identifier
+        doctor_id: Doctor identifier
     
     Returns:
         int: ID of the inserted prediction
     """
     with get_db_cursor() as cursor:
-        cursor.execute('''
-            INSERT INTO predictions (
-                user, user_role, risk_level, risk_probability,
-                alert_generated, alert_type,
-                heart_rate, blood_pressure_systolic, blood_pressure_diastolic,
-                temperature, oxygen_saturation, respiratory_rate,
-                symptom_count, condition_count, symptoms, conditions
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            user,
-            user_role,
-            risk_level,
-            risk_probability,
-            1 if alert_generated else 0,
-            alert_type,
-            vital_signs.get('heart_rate'),
-            vital_signs.get('blood_pressure_systolic'),
-            vital_signs.get('blood_pressure_diastolic'),
-            vital_signs.get('temperature'),
-            vital_signs.get('oxygen_saturation'),
-            vital_signs.get('respiratory_rate'),
-            symptom_count,
-            condition_count,
-            json.dumps(symptoms) if symptoms else None,
-            json.dumps(conditions) if conditions else None
-        ))
-        return cursor.lastrowid
+        if USE_POSTGRES:
+            cursor.execute('''
+                INSERT INTO predictions (
+                    patient_id, doctor_id, user_name, user_role, risk_level, risk_probability,
+                    alert_generated, alert_type,
+                    heart_rate, blood_pressure_systolic, blood_pressure_diastolic,
+                    temperature, oxygen_saturation, respiratory_rate,
+                    blood_sugar, pain_score, consciousness_gcs, bmi,
+                    symptom_count, condition_count, symptoms, conditions
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            ''', (
+                patient_id or vital_signs.get('patient_id', ''),
+                doctor_id or vital_signs.get('doctor_id', ''),
+                user,
+                user_role,
+                risk_level,
+                risk_probability,
+                1 if alert_generated else 0,
+                alert_type,
+                vital_signs.get('heart_rate'),
+                vital_signs.get('blood_pressure_systolic'),
+                vital_signs.get('blood_pressure_diastolic'),
+                vital_signs.get('temperature'),
+                vital_signs.get('oxygen_saturation'),
+                vital_signs.get('respiratory_rate'),
+                vital_signs.get('blood_sugar'),
+                vital_signs.get('pain_score'),
+                vital_signs.get('consciousness_gcs'),
+                vital_signs.get('bmi'),
+                symptom_count,
+                condition_count,
+                json.dumps(symptoms) if symptoms else None,
+                json.dumps(conditions) if conditions else None
+            ))
+            return cursor.fetchone()['id']
+        else:
+            cursor.execute('''
+                INSERT INTO predictions (
+                    patient_id, doctor_id, user_name, user_role, risk_level, risk_probability,
+                    alert_generated, alert_type,
+                    heart_rate, blood_pressure_systolic, blood_pressure_diastolic,
+                    temperature, oxygen_saturation, respiratory_rate,
+                    blood_sugar, pain_score, consciousness_gcs, bmi,
+                    symptom_count, condition_count, symptoms, conditions
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                patient_id or vital_signs.get('patient_id', ''),
+                doctor_id or vital_signs.get('doctor_id', ''),
+                user,
+                user_role,
+                risk_level,
+                risk_probability,
+                1 if alert_generated else 0,
+                alert_type,
+                vital_signs.get('heart_rate'),
+                vital_signs.get('blood_pressure_systolic'),
+                vital_signs.get('blood_pressure_diastolic'),
+                vital_signs.get('temperature'),
+                vital_signs.get('oxygen_saturation'),
+                vital_signs.get('respiratory_rate'),
+                vital_signs.get('blood_sugar'),
+                vital_signs.get('pain_score'),
+                vital_signs.get('consciousness_gcs'),
+                vital_signs.get('bmi'),
+                symptom_count,
+                condition_count,
+                json.dumps(symptoms) if symptoms else None,
+                json.dumps(conditions) if conditions else None
+            ))
+            return cursor.lastrowid
 
 
 def save_alert(
@@ -188,29 +337,37 @@ def save_alert(
     """
     Save an alert record to the database.
     
-    Args:
-        user: Username
-        risk_level: Risk level
-        alert_message: Alert message text
-        recommendations: List of recommendations
-        prediction_id: Optional ID of associated prediction
-    
     Returns:
         int: ID of the inserted alert
     """
     with get_db_cursor() as cursor:
-        cursor.execute('''
-            INSERT INTO alerts (
-                user, risk_level, alert_message, recommendations, prediction_id
-            ) VALUES (?, ?, ?, ?, ?)
-        ''', (
-            user,
-            risk_level,
-            alert_message,
-            json.dumps(recommendations),
-            prediction_id
-        ))
-        return cursor.lastrowid
+        if USE_POSTGRES:
+            cursor.execute('''
+                INSERT INTO alerts (
+                    user_name, risk_level, alert_message, recommendations, prediction_id
+                ) VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+            ''', (
+                user,
+                risk_level,
+                alert_message,
+                json.dumps(recommendations),
+                prediction_id
+            ))
+            return cursor.fetchone()['id']
+        else:
+            cursor.execute('''
+                INSERT INTO alerts (
+                    user_name, risk_level, alert_message, recommendations, prediction_id
+                ) VALUES (?, ?, ?, ?, ?)
+            ''', (
+                user,
+                risk_level,
+                alert_message,
+                json.dumps(recommendations),
+                prediction_id
+            ))
+            return cursor.lastrowid
 
 
 def get_predictions(
@@ -218,42 +375,76 @@ def get_predictions(
     risk_level: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    user: Optional[str] = None
+    user: Optional[str] = None,
+    patient_id: Optional[str] = None,
+    doctor_id: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
     Get prediction records with optional filtering.
     
-    Args:
-        limit: Maximum number of records to return
-        risk_level: Filter by risk level
-        start_date: Filter by start date (ISO format)
-        end_date: Filter by end date (ISO format)
-        user: Filter by username
-    
     Returns:
         List of prediction dictionaries
     """
-    query = "SELECT * FROM predictions WHERE 1=1"
     params = []
     
-    if risk_level:
-        query += " AND risk_level = ?"
-        params.append(risk_level)
-    
-    if start_date:
-        query += " AND timestamp >= ?"
-        params.append(start_date)
-    
-    if end_date:
-        query += " AND timestamp <= ?"
-        params.append(end_date)
-    
-    if user:
-        query += " AND user = ?"
-        params.append(user)
-    
-    query += " ORDER BY timestamp DESC LIMIT ?"
-    params.append(limit)
+    if USE_POSTGRES:
+        query = "SELECT * FROM predictions WHERE 1=1"
+        
+        if risk_level:
+            query += " AND risk_level = %s"
+            params.append(risk_level)
+        
+        if start_date:
+            query += " AND timestamp >= %s"
+            params.append(start_date)
+        
+        if end_date:
+            query += " AND timestamp <= %s"
+            params.append(end_date)
+        
+        if user:
+            query += " AND user_name = %s"
+            params.append(user)
+        
+        if patient_id:
+            query += " AND patient_id = %s"
+            params.append(patient_id)
+        
+        if doctor_id:
+            query += " AND doctor_id = %s"
+            params.append(doctor_id)
+        
+        query += " ORDER BY timestamp DESC LIMIT %s"
+        params.append(limit)
+    else:
+        query = "SELECT * FROM predictions WHERE 1=1"
+        
+        if risk_level:
+            query += " AND risk_level = ?"
+            params.append(risk_level)
+        
+        if start_date:
+            query += " AND timestamp >= ?"
+            params.append(start_date)
+        
+        if end_date:
+            query += " AND timestamp <= ?"
+            params.append(end_date)
+        
+        if user:
+            query += " AND user_name = ?"
+            params.append(user)
+        
+        if patient_id:
+            query += " AND patient_id = ?"
+            params.append(patient_id)
+        
+        if doctor_id:
+            query += " AND doctor_id = ?"
+            params.append(doctor_id)
+        
+        query += " ORDER BY timestamp DESC LIMIT ?"
+        params.append(limit)
     
     with get_db_cursor() as cursor:
         cursor.execute(query, params)
@@ -267,23 +458,23 @@ def get_alerts(
 ) -> List[Dict[str, Any]]:
     """
     Get alert records.
-    
-    Args:
-        limit: Maximum number of records
-        acknowledged: Filter by acknowledged status
-    
-    Returns:
-        List of alert dictionaries
     """
-    query = "SELECT * FROM alerts WHERE 1=1"
     params = []
     
-    if acknowledged is not None:
-        query += " AND acknowledged = ?"
-        params.append(1 if acknowledged else 0)
-    
-    query += " ORDER BY timestamp DESC LIMIT ?"
-    params.append(limit)
+    if USE_POSTGRES:
+        query = "SELECT * FROM alerts WHERE 1=1"
+        if acknowledged is not None:
+            query += " AND acknowledged = %s"
+            params.append(1 if acknowledged else 0)
+        query += " ORDER BY timestamp DESC LIMIT %s"
+        params.append(limit)
+    else:
+        query = "SELECT * FROM alerts WHERE 1=1"
+        if acknowledged is not None:
+            query += " AND acknowledged = ?"
+            params.append(1 if acknowledged else 0)
+        query += " ORDER BY timestamp DESC LIMIT ?"
+        params.append(limit)
     
     with get_db_cursor() as cursor:
         cursor.execute(query, params)
@@ -291,7 +482,6 @@ def get_alerts(
         results = []
         for row in rows:
             d = dict(row)
-            # Parse recommendations JSON
             if d.get('recommendations'):
                 try:
                     d['recommendations'] = json.loads(d['recommendations'])
@@ -304,14 +494,12 @@ def get_alerts(
 def get_statistics() -> Dict[str, Any]:
     """
     Get summary statistics for the analytics dashboard.
-    
-    Returns:
-        Dictionary with various statistics
     """
     with get_db_cursor() as cursor:
         # Total predictions
-        cursor.execute("SELECT COUNT(*) FROM predictions")
-        total_predictions = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) as count FROM predictions")
+        result = cursor.fetchone()
+        total_predictions = result['count'] if USE_POSTGRES else result[0]
         
         # Predictions by risk level
         cursor.execute('''
@@ -319,35 +507,45 @@ def get_statistics() -> Dict[str, Any]:
             FROM predictions 
             GROUP BY risk_level
         ''')
-        risk_distribution = {row['risk_level']: row['count'] for row in cursor.fetchall()}
+        if USE_POSTGRES:
+            risk_distribution = {row['risk_level']: row['count'] for row in cursor.fetchall()}
+        else:
+            risk_distribution = {row['risk_level']: row['count'] for row in cursor.fetchall()}
         
         # Total alerts
-        cursor.execute("SELECT COUNT(*) FROM alerts")
-        total_alerts = cursor.fetchone()[0]
-        
-        # Alerts by risk level
-        cursor.execute('''
-            SELECT risk_level, COUNT(*) as count 
-            FROM alerts 
-            GROUP BY risk_level
-        ''')
-        alert_distribution = {row['risk_level']: row['count'] for row in cursor.fetchall()}
+        cursor.execute("SELECT COUNT(*) as count FROM alerts")
+        result = cursor.fetchone()
+        total_alerts = result['count'] if USE_POSTGRES else result[0]
         
         # Today's predictions
         today = datetime.now().strftime('%Y-%m-%d')
-        cursor.execute(
-            "SELECT COUNT(*) FROM predictions WHERE date(timestamp) = ?",
-            (today,)
-        )
-        today_predictions = cursor.fetchone()[0]
+        if USE_POSTGRES:
+            cursor.execute(
+                "SELECT COUNT(*) as count FROM predictions WHERE DATE(timestamp) = %s",
+                (today,)
+            )
+        else:
+            cursor.execute(
+                "SELECT COUNT(*) as count FROM predictions WHERE date(timestamp) = ?",
+                (today,)
+            )
+        result = cursor.fetchone()
+        today_predictions = result['count'] if USE_POSTGRES else result[0]
         
         # This week's predictions
         week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-        cursor.execute(
-            "SELECT COUNT(*) FROM predictions WHERE date(timestamp) >= ?",
-            (week_ago,)
-        )
-        week_predictions = cursor.fetchone()[0]
+        if USE_POSTGRES:
+            cursor.execute(
+                "SELECT COUNT(*) as count FROM predictions WHERE DATE(timestamp) >= %s",
+                (week_ago,)
+            )
+        else:
+            cursor.execute(
+                "SELECT COUNT(*) as count FROM predictions WHERE date(timestamp) >= ?",
+                (week_ago,)
+            )
+        result = cursor.fetchone()
+        week_predictions = result['count'] if USE_POSTGRES else result[0]
         
         # High risk rate
         high_risk_count = risk_distribution.get('High', 0)
@@ -356,86 +554,54 @@ def get_statistics() -> Dict[str, Any]:
         # Alert rate
         alert_rate = (total_alerts / total_predictions * 100) if total_predictions > 0 else 0
         
-        # Average vital signs for high risk cases
-        cursor.execute('''
-            SELECT 
-                AVG(heart_rate) as avg_hr,
-                AVG(blood_pressure_systolic) as avg_bp_sys,
-                AVG(temperature) as avg_temp,
-                AVG(oxygen_saturation) as avg_spo2
-            FROM predictions 
-            WHERE risk_level = 'High'
-        ''')
-        high_risk_vitals = cursor.fetchone()
-        
         return {
             'total_predictions': total_predictions,
             'total_alerts': total_alerts,
             'today_predictions': today_predictions,
             'week_predictions': week_predictions,
             'risk_distribution': risk_distribution,
-            'alert_distribution': alert_distribution,
             'high_risk_rate': round(high_risk_rate, 1),
-            'alert_rate': round(alert_rate, 1),
-            'high_risk_vitals': {
-                'avg_heart_rate': round(high_risk_vitals['avg_hr'] or 0, 1),
-                'avg_bp_systolic': round(high_risk_vitals['avg_bp_sys'] or 0, 1),
-                'avg_temperature': round(high_risk_vitals['avg_temp'] or 0, 1),
-                'avg_spo2': round(high_risk_vitals['avg_spo2'] or 0, 1)
-            } if high_risk_vitals else {}
+            'alert_rate': round(alert_rate, 1)
         }
 
 
 def get_prediction_trends(days: int = 7) -> List[Dict[str, Any]]:
     """
     Get prediction trends over the specified number of days.
-    
-    Args:
-        days: Number of days to include
-    
-    Returns:
-        List of daily statistics
     """
     start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
     
     with get_db_cursor() as cursor:
-        cursor.execute('''
-            SELECT 
-                date(timestamp) as date,
-                COUNT(*) as total,
-                SUM(CASE WHEN risk_level = 'Low' THEN 1 ELSE 0 END) as low_risk,
-                SUM(CASE WHEN risk_level = 'Medium' THEN 1 ELSE 0 END) as medium_risk,
-                SUM(CASE WHEN risk_level = 'High' THEN 1 ELSE 0 END) as high_risk,
-                SUM(alert_generated) as alerts
-            FROM predictions
-            WHERE date(timestamp) >= ?
-            GROUP BY date(timestamp)
-            ORDER BY date(timestamp)
-        ''', (start_date,))
+        if USE_POSTGRES:
+            cursor.execute('''
+                SELECT 
+                    DATE(timestamp) as date,
+                    COUNT(*) as total,
+                    SUM(CASE WHEN risk_level = 'Low' THEN 1 ELSE 0 END) as low_risk,
+                    SUM(CASE WHEN risk_level = 'Medium' THEN 1 ELSE 0 END) as medium_risk,
+                    SUM(CASE WHEN risk_level = 'High' THEN 1 ELSE 0 END) as high_risk,
+                    SUM(alert_generated) as alerts
+                FROM predictions
+                WHERE DATE(timestamp) >= %s
+                GROUP BY DATE(timestamp)
+                ORDER BY DATE(timestamp)
+            ''', (start_date,))
+        else:
+            cursor.execute('''
+                SELECT 
+                    date(timestamp) as date,
+                    COUNT(*) as total,
+                    SUM(CASE WHEN risk_level = 'Low' THEN 1 ELSE 0 END) as low_risk,
+                    SUM(CASE WHEN risk_level = 'Medium' THEN 1 ELSE 0 END) as medium_risk,
+                    SUM(CASE WHEN risk_level = 'High' THEN 1 ELSE 0 END) as high_risk,
+                    SUM(alert_generated) as alerts
+                FROM predictions
+                WHERE date(timestamp) >= ?
+                GROUP BY date(timestamp)
+                ORDER BY date(timestamp)
+            ''', (start_date,))
         
         return [dict(row) for row in cursor.fetchall()]
-
-
-def acknowledge_alert(alert_id: int, user: str) -> bool:
-    """
-    Mark an alert as acknowledged.
-    
-    Args:
-        alert_id: ID of the alert
-        user: Username acknowledging the alert
-    
-    Returns:
-        True if successful
-    """
-    with get_db_cursor() as cursor:
-        cursor.execute('''
-            UPDATE alerts 
-            SET acknowledged = 1, 
-                acknowledged_at = CURRENT_TIMESTAMP,
-                acknowledged_by = ?
-            WHERE id = ?
-        ''', (user, alert_id))
-        return cursor.rowcount > 0
 
 
 def export_predictions_csv(
@@ -444,13 +610,6 @@ def export_predictions_csv(
 ) -> str:
     """
     Export predictions to CSV format.
-    
-    Args:
-        start_date: Optional start date filter
-        end_date: Optional end date filter
-    
-    Returns:
-        CSV string
     """
     import csv
     import io
@@ -472,36 +631,44 @@ def export_predictions_csv(
     return output.getvalue()
 
 
-def clear_old_data(days: int = 90) -> int:
+def export_predictions_excel() -> Optional[bytes]:
     """
-    Clear prediction and alert data older than specified days.
-    For data retention compliance.
-    
-    Args:
-        days: Age threshold for deletion
+    Export predictions to Excel format.
     
     Returns:
-        Number of records deleted
+        Bytes of the Excel file, or None if no records
     """
-    cutoff_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-    
+    import io
+    try:
+        import pandas as pd
+        
+        predictions = get_predictions(limit=10000)
+        
+        if not predictions:
+            return None
+        
+        df = pd.DataFrame(predictions)
+        
+        output = io.BytesIO()
+        df.to_excel(output, index=False, engine='openpyxl')
+        output.seek(0)
+        
+        return output.getvalue()
+    except Exception as e:
+        print(f"Error exporting to Excel: {e}")
+        return None
+
+
+def get_total_records() -> int:
+    """Return total number of prediction records."""
     with get_db_cursor() as cursor:
-        # Delete old alerts first (foreign key constraint)
-        cursor.execute(
-            "DELETE FROM alerts WHERE date(timestamp) < ?",
-            (cutoff_date,)
-        )
-        alerts_deleted = cursor.rowcount
-        
-        # Delete old predictions
-        cursor.execute(
-            "DELETE FROM predictions WHERE date(timestamp) < ?",
-            (cutoff_date,)
-        )
-        predictions_deleted = cursor.rowcount
-        
-        return alerts_deleted + predictions_deleted
+        cursor.execute("SELECT COUNT(*) as count FROM predictions")
+        result = cursor.fetchone()
+        return result['count'] if USE_POSTGRES else result[0]
 
 
 # Initialize database on module import
-init_db()
+try:
+    init_db()
+except Exception as e:
+    print(f"Database initialization warning: {e}")

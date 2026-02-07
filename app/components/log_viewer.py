@@ -2,6 +2,7 @@
 Log Viewer Component for CDSS
 
 Provides admin dashboard for viewing prediction and alert logs.
+Now uses SQLite database for consistent data with Analytics Dashboard.
 """
 
 import streamlit as st
@@ -12,7 +13,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from app.utils.logger import get_logger
+from app.database.db import (
+    get_statistics,
+    get_predictions,
+    get_alerts,
+    get_total_records
+)
 from app.auth import get_current_user, UserRole
 
 
@@ -27,10 +33,8 @@ def render_log_viewer():
     st.header("📊 System Logs & Analytics")
     st.caption("View prediction history and system statistics")
     
-    logger = get_logger()
-    
-    # Statistics overview
-    stats = logger.get_statistics()
+    # Statistics overview - now from database
+    stats = get_statistics()
     
     st.subheader("📈 Quick Stats")
     col1, col2, col3, col4 = st.columns(4)
@@ -57,7 +61,10 @@ def render_log_viewer():
         )
     
     with col4:
-        high_risk_pct = stats.get('risk_percentages', {}).get('High', 0)
+        # Calculate high risk percentage
+        total = stats.get('total_predictions', 0)
+        high_count = stats.get('risk_distribution', {}).get('High', 0)
+        high_risk_pct = round((high_count / total * 100), 1) if total > 0 else 0
         st.metric(
             label="High Risk Cases",
             value=f"{high_risk_pct}%",
@@ -74,12 +81,13 @@ def render_log_viewer():
         
         with col_chart1:
             # Create a horizontal bar chart
+            risk_dist = stats.get('risk_distribution', {})
             risk_data = pd.DataFrame({
                 'Risk Level': ['Low', 'Medium', 'High'],
                 'Count': [
-                    stats['risk_distribution']['Low'],
-                    stats['risk_distribution']['Medium'],
-                    stats['risk_distribution']['High']
+                    risk_dist.get('Low', 0),
+                    risk_dist.get('Medium', 0),
+                    risk_dist.get('High', 0)
                 ],
                 'Color': ['#28a745', '#ffc107', '#dc3545']
             })
@@ -88,9 +96,10 @@ def render_log_viewer():
         
         with col_chart2:
             st.markdown("**Distribution Breakdown:**")
+            total = stats.get('total_predictions', 1)  # Avoid division by zero
             for level in ['Low', 'Medium', 'High']:
-                count = stats['risk_distribution'][level]
-                pct = stats['risk_percentages'][level]
+                count = stats['risk_distribution'].get(level, 0)
+                pct = round((count / total * 100), 1) if total > 0 else 0
                 color = {'Low': '🟢', 'Medium': '🟡', 'High': '🔴'}[level]
                 st.markdown(f"{color} **{level}**: {count} ({pct}%)")
     
@@ -100,10 +109,10 @@ def render_log_viewer():
     tab1, tab2 = st.tabs(["📋 Prediction History", "🚨 Alert History"])
     
     with tab1:
-        render_prediction_logs(logger)
+        render_prediction_logs()
     
     with tab2:
-        render_alert_logs(logger)
+        render_alert_logs()
     
     st.divider()
     
@@ -117,16 +126,11 @@ def render_log_viewer():
             st.rerun()
     
     with col_action3:
-        with st.expander("⚠️ Danger Zone"):
-            st.warning("This action cannot be undone!")
-            if st.button("🗑️ Clear All Logs", type="secondary"):
-                logger.clear_logs()
-                st.success("✅ All logs cleared")
-                st.rerun()
+        st.info("💡 Database records are persistent. Use Analytics tab for data export.")
 
 
-def render_prediction_logs(logger):
-    """Render prediction logs table."""
+def render_prediction_logs():
+    """Render prediction logs table from database."""
     st.subheader("📋 Recent Predictions")
     
     # Filters
@@ -146,9 +150,9 @@ def render_prediction_logs(logger):
             key="pred_limit"
         )
     
-    # Get filtered predictions
+    # Get filtered predictions from database
     risk_level = None if risk_filter == "All" else risk_filter
-    predictions = logger.get_predictions(limit=limit, risk_level=risk_level)
+    predictions = get_predictions(limit=limit, risk_level=risk_level)
     
     if predictions:
         # Convert to DataFrame for display
@@ -164,14 +168,14 @@ def render_prediction_logs(logger):
         if 'alert_generated' in df.columns:
             df['alert_generated'] = df['alert_generated'].apply(lambda x: "✅ Yes" if x else "❌ No")
         
-        # Select and rename columns for display
-        display_columns = ['timestamp', 'user', 'risk_level', 'risk_probability', 
+        # Select and rename columns for display (database uses user_name instead of user)
+        display_columns = ['timestamp', 'user_name', 'risk_level', 'risk_probability', 
                           'alert_generated', 'symptom_count', 'condition_count']
         display_columns = [c for c in display_columns if c in df.columns]
         
         column_names = {
             'timestamp': 'Time',
-            'user': 'User',
+            'user_name': 'User',
             'risk_level': 'Risk Level',
             'risk_probability': 'Probability',
             'alert_generated': 'Alert',
@@ -202,11 +206,11 @@ def render_prediction_logs(logger):
         st.info("📭 No prediction logs found")
 
 
-def render_alert_logs(logger):
-    """Render alert logs table."""
+def render_alert_logs():
+    """Render alert logs table from database."""
     st.subheader("🚨 Recent Alerts")
     
-    alerts = logger.get_alerts(limit=50)
+    alerts = get_alerts(limit=50)
     
     if alerts:
         df = pd.DataFrame(alerts)
@@ -220,13 +224,13 @@ def render_alert_logs(logger):
                 lambda x: f"{len(x)} recommendations" if isinstance(x, list) else "N/A"
             )
         
-        # Select columns for display
-        display_columns = ['timestamp', 'user', 'risk_level', 'alert_message']
+        # Select columns for display (database uses user_name instead of user)
+        display_columns = ['timestamp', 'user_name', 'risk_level', 'alert_message']
         display_columns = [c for c in display_columns if c in df.columns]
         
         column_names = {
             'timestamp': 'Time',
-            'user': 'User',
+            'user_name': 'User',
             'risk_level': 'Risk Level',
             'alert_message': 'Alert Message'
         }

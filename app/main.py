@@ -49,6 +49,7 @@ from ml.rules_engine import ClinicalRulesEngine, HybridDecisionEngine
 from ml.alert_prioritization import SmartAlertEngine
 from app.fhir.fhir_converter import FHIRConverter
 from app.components.analytics_dashboard import render_analytics_dashboard
+from app.database import export_predictions_excel, get_total_records, save_prediction as db_save_prediction
 
 
 def load_lottieurl(url: str):
@@ -219,11 +220,31 @@ def render_sidebar():
         st.markdown("""
         <div style="background: #e3f2fd; padding: 10px; border-radius: 8px; border: 1px solid #90caf9;">
             <p style="color: #1565c0; margin: 0; font-size: 0.8rem;">
-                🔒 <strong>Privacy Notice:</strong> Patient data is not stored. 
-                All information is processed in-session only.
+                📊 <strong>Data Notice:</strong> Patient records are stored locally 
+                in Excel format for tracking and analysis.
             </p>
         </div>
         """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Patient Records Download Section
+        st.subheader("📥 Patient Records")
+        records_count = get_total_records()
+        st.markdown(f"**Total Records:** {records_count}")
+        
+        if records_count > 0:
+            excel_data = export_predictions_excel()
+            if excel_data:
+                st.download_button(
+                    label="📊 Download Excel",
+                    data=excel_data,
+                    file_name="patient_records.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+        else:
+            st.caption("No records yet. Records are saved after each prediction.")
         
         st.divider()
         
@@ -914,7 +935,7 @@ def render_risk_assessment_view(user):
                                     user=user.username,
                                     user_role=user.role.value,
                                     risk_level=assessment.risk_label,
-                                    risk_probability=max(probabilities.values()) if probabilities else 0,
+                                    risk_probability=float(max(probabilities)) if len(probabilities) > 0 else 0,
                                     alert_generated=assessment.should_alert,
                                     alert_type=assessment.risk_label if assessment.should_alert else None,
                                     vital_signs=patient_data,
@@ -931,8 +952,8 @@ def render_risk_assessment_view(user):
                                         recommendations=assessment.recommendations or []
                                     )
                             except Exception as log_error:
-                                # Don't break the app if logging fails
-                                pass
+                                # Print error for debugging
+                                st.warning(f"⚠️ Logging info: {log_error}")
                             
                             # Store in session state
                             st.session_state.prediction_made = True

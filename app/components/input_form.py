@@ -23,6 +23,24 @@ def render_patient_demographics() -> Dict:
     """Render patient demographics input form."""
     st.subheader("👤 Patient Demographics")
     
+    # Patient and Doctor ID Row
+    col_id1, col_id2 = st.columns(2)
+    
+    with col_id1:
+        patient_id = st.text_input(
+            "🆔 Patient ID",
+            placeholder="Enter unique patient ID",
+            help="Unique identifier for the patient"
+        )
+    
+    with col_id2:
+        doctor_id = st.text_input(
+            "👨‍⚕️ Doctor ID",
+            placeholder="Enter attending doctor ID",
+            help="ID of the doctor performing the assessment"
+        )
+    
+    # Age and Gender Row
     col1, col2 = st.columns(2)
     
     with col1:
@@ -43,7 +61,8 @@ def render_patient_demographics() -> Dict:
             help="Patient's gender"
         )
     
-    return {"age": age, "gender": gender}
+    return {"patient_id": patient_id, "doctor_id": doctor_id, "age": age, "gender": gender}
+
 
 
 def render_symptoms_form() -> Dict:

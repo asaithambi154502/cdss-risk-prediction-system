@@ -11,7 +11,9 @@ from app.database.db import (
     get_alerts,
     get_statistics,
     get_prediction_trends,
-    export_predictions_csv
+    export_predictions_csv,
+    export_predictions_excel,
+    get_total_records
 )
 
 __all__ = [
@@ -23,5 +25,7 @@ __all__ = [
     'get_alerts',
     'get_statistics',
     'get_prediction_trends',
-    'export_predictions_csv'
+    'export_predictions_csv',
+    'export_predictions_excel',
+    'get_total_records'
 ]

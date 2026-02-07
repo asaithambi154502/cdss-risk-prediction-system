@@ -42,5 +42,21 @@
       "Monitor vital signs"
     ],
     "acknowledged": false
+  },
+  {
+    "timestamp": "2026-02-07T13:05:20.949916",
+    "user": "admin",
+    "risk_level": "High",
+    "alert_message": "\ud83d\udea8 HIGH RISK ALERT (99% confidence). Immediate clinical review recommended. Verify symptoms and consider specialist consultation.",
+    "recommendations": [
+      "\ud83d\udea8 Perform immediate clinical review",
+      "Verify all vital signs and symptoms",
+      "Consider urgent diagnostic tests",
+      "Consult with senior clinician or specialist",
+      "Document all observations in detail",
+      "Prepare for potential escalation of care",
+      "Ensure patient monitoring is continuous"
+    ],
+    "acknowledged": false
   }
 ]
